@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebGIS Prediksi Nilai Lahan OLS | Gubeng, Surabaya</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+/* ════════════════════════════════════════════════
+   DESIGN SYSTEM — Light Professional Theme
+════════════════════════════════════════════════ */
+:root {
+  --p:   #01204E;   /* primary   */
+  --s:   #028391;   /* secondary */
+  --a:   #FAA968;   /* accent    */
+  --bg:  #F7F8FA;
+  --wh:  #FFFFFF;
+  --br:  #E5E7EB;
+  --tm:  #111827;   /* text main */
+  --ts:  #6B7280;   /* text sub  */
+  --tmu: #9CA3AF;   /* text muted*/
+  --ok:  #16A34A;
+  --warn:#D97706;
+  --sh0: 0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.05);
+  --sh1: 0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --sh2: 0 12px 40px rgba(0,0,0,.10),0 4px 12px rgba(0,0,0,.06);
+  --r:  12px; --rl:16px; --rxl:20px;
+  --nav: 56px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);overflow:hidden;color:var(--tm)}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;outline:none}
+
+/* MAP */
+#map{position:fixed;top:var(--nav);left:0;right:0;bottom:0;z-index:1}
+
+/* ════ NAVBAR ════ */
+#nav{position:fixed;top:0;left:0;right:0;height:var(--nav);z-index:2000;
+  background:var(--wh);border-bottom:1px solid var(--br);
+  display:flex;align-items:center;padding:0 20px;gap:0;box-shadow:var(--sh0)}
+
+.nav-brand{display:flex;align-items:center;gap:10px;min-width:280px}
+.nav-brand-ico{width:32px;height:32px;background:var(--p);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.nav-brand-text{}
+.nav-brand-title{font-size:13px;font-weight:700;color:var(--p);letter-spacing:-.2px;line-height:1.2}
+.nav-brand-sub{font-size:10px;color:var(--ts);font-weight:400}
+
+.nav-tabs{flex:1;display:flex;justify-content:center;gap:4px}
+.nav-tab{padding:7px 20px;border-radius:var(--r);font-size:12.5px;font-weight:600;
+  color:var(--ts);background:transparent;transition:all .2s;letter-spacing:.1px;
+  display:flex;align-items:center;gap:7px}
+.nav-tab:hover{background:var(--bg);color:var(--tm)}
+.nav-tab.on{background:var(--p);color:#fff;box-shadow:0 2px 8px rgba(1,32,78,.25)}
+.nav-tab .tab-no{width:18px;height:18px;border-radius:50%;
+  background:rgba(255,255,255,.2);font-size:9px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center}
+.nav-tab:not(.on) .tab-no{background:rgba(1,32,78,.08);color:var(--p)}
+
+.nav-right{display:flex;align-items:center;gap:10px;min-width:200px;justify-content:flex-end}
+.nav-dot{width:7px;height:7px;background:#22C55E;border-radius:50%;animation:npulse 2s infinite}
+.nav-stat{font-size:10px;color:var(--ts);font-weight:500}
+@keyframes npulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ════ BASEMAP SWITCHER ════ */
+#bsw{position:fixed;top:calc(var(--nav) + 12px);left:50%;transform:translateX(-50%);
+  z-index:1000;display:flex;gap:2px;padding:4px;border-radius:50px;
+  background:var(--wh);border:1px solid var(--br);box-shadow:var(--sh1)}
+.bm{padding:5px 14px;font-size:11px;font-weight:600;border-radius:50px;
+  color:var(--ts);background:transparent;transition:all .2s}
+.bm:hover{color:var(--tm);background:var(--bg)}
+.bm.on{background:var(--p);color:#fff}
+
+/* ════ LAYER PANEL ════ */
+#lp{position:fixed;top:calc(var(--nav) + 12px);left:12px;z-index:1000;
+  background:var(--wh);border:1px solid var(--br);border-radius:var(--rl);
+  box-shadow:var(--sh2);width:220px;max-height:calc(100vh - 200px);
+  overflow-y:auto;overflow-x:hidden}
+#lp::-webkit-scrollbar{width:3px}
+#lp::-webkit-scrollbar-thumb{background:var(--br);border-radius:2px}
+
+.lp-head{padding:12px 14px 8px;border-bottom:1px solid var(--br)}
+.lp-title{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ts)}
+
+.lp-sec{padding:8px 14px 2px;font-size:9px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--tmu);margin-top:2px}
+
+.ltog{display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;transition:background .15s;user-select:none}
+.ltog:hover{background:var(--bg)}
+.ltog.on{background:rgba(2,131,145,.06)}
+.l-ico{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.l-inf{flex:1}
+.l-name{font-size:11px;font-weight:600;color:var(--tm);line-height:1.2}
+.l-desc{font-size:9px;color:var(--tmu);margin-top:1px}
+.tsw{width:32px;height:17px;border-radius:9px;background:var(--br);position:relative;transition:all .25s;flex-shrink:0}
+.tsw::after{content:'';position:absolute;width:13px;height:13px;background:#fff;border-radius:50%;top:2px;left:2px;transition:all .25s;box-shadow:var(--sh0)}
+.ltog.on .tsw{background:var(--s)}
+.ltog.on .tsw::after{left:17px}
+.lp-div{height:1px;background:var(--br);margin:4px 0}
+
+/* ════ ANALYSIS PANEL ════ */
+#ap{position:fixed;top:calc(var(--nav) + 12px);right:12px;z-index:1000;
+  width:270px;max-height:calc(100vh - var(--nav) - 24px);
+  background:var(--wh);border:1px solid var(--br);border-radius:var(--rl);
+  box-shadow:var(--sh2);display:flex;flex-direction:column;overflow:hidden;
+  opacity:0;transform:translateX(12px);pointer-events:none;transition:all .35s cubic-bezier(.34,1.56,.64,1)}
+#ap.vis{opacity:1;transform:translateX(0);pointer-events:all}
+/* Content panes must be column-flex so ap-hd and ap-body stack vertically */
+#ap-m1-content,#ap-m2-content{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+
+#ap-hint{position:fixed;top:calc(var(--nav) + 12px);right:12px;z-index:1000;
+  width:300px;background:var(--wh);border:1px solid var(--br);border-radius:var(--rl);
+  box-shadow:var(--sh2);padding:28px 22px;text-align:center;
+  transition:all .3s ease}
+#ap-hint.gone{opacity:0;pointer-events:none}
+.hint-ico{font-size:32px;margin-bottom:12px}
+.hint-ttl{font-size:14px;font-weight:700;color:var(--p);margin-bottom:8px}
+.hint-txt{font-size:11.5px;color:var(--ts);line-height:1.65}
+.hint-badge{display:inline-flex;align-items:center;gap:5px;margin-top:14px;
+  background:rgba(2,131,145,.08);border:1px solid rgba(2,131,145,.2);
+  border-radius:50px;padding:5px 12px;font-size:10px;font-weight:600;color:var(--s)}
+
+.ap-hd{padding:14px 16px 10px;border-bottom:1px solid var(--br);flex-shrink:0;position:relative}
+.ap-tag{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:var(--s);
+  background:rgba(2,131,145,.08);border-radius:4px;padding:2px 6px;margin-bottom:6px}
+.ap-name{font-size:17px;font-weight:800;color:var(--p);letter-spacing:-.3px}
+.ap-sub{font-size:11px;color:var(--ts);margin-top:2px}
+.ap-cls{position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:50%;
+  background:var(--bg);border:1px solid var(--br);color:var(--ts);font-size:13px;
+  display:flex;align-items:center;justify-content:center;transition:all .2s}
+.ap-cls:hover{background:#FEE2E2;border-color:#FCA5A5;color:#DC2626}
+
+.ap-body{flex:1;overflow-y:auto;padding:10px 12px}
+.ap-body::-webkit-scrollbar{width:3px}
+.ap-body::-webkit-scrollbar-thumb{background:var(--br);border-radius:2px}
+
+/* Value card */
+.val-card{background:linear-gradient(135deg,var(--p),#01366e);border-radius:var(--r);
+  padding:10px 12px;margin-bottom:10px}
+.val-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:rgba(255,255,255,.6);margin-bottom:6px}
+.val-num{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.val-unit{font-size:11px;color:rgba(255,255,255,.6);margin-left:3px}
+.val-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:4px}
+
+/* Zona badge */
+.zona{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+  border-radius:50px;font-size:10px;font-weight:700;margin-top:4px}
+.zona-tinggi{background:rgba(1,32,78,.1);color:var(--p)}
+.zona-sedang{background:rgba(2,131,145,.1);color:var(--s)}
+.zona-rendah{background:rgba(250,169,104,.15);color:#B45309}
+
+/* Metric row */
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.mc2{background:var(--bg);border:1px solid var(--br);border-radius:var(--r);padding:8px 10px}
+.mc2-l{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--tmu);margin-bottom:4px}
+.mc2-v{font-size:17px;font-weight:800;color:var(--p)}
+.mc2-s{font-size:9px;color:var(--ts);margin-top:2px}
+
+/* Section title */
+.stit{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--tmu);margin-bottom:8px;margin-top:12px}
+
+/* Progress bar */
+.prog-row{margin-bottom:8px}
+.prog-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.prog-lbl{font-size:10.5px;font-weight:600;color:var(--tm)}
+.prog-pct{font-size:10.5px;font-weight:700;color:var(--p)}
+.prog-bg{height:5px;background:var(--br);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .7s cubic-bezier(.34,1.56,.64,1)}
+
+/* R² display */
+.r2-card{background:var(--bg);border:1px solid var(--br);border-radius:var(--r);padding:8px 10px;margin-bottom:4px}
+.r2-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.r2-item .r2-l{font-size:9px;color:var(--ts);margin-bottom:2px}
+.r2-item .r2-v{font-size:14px;font-weight:700;color:var(--p)}
+.r2-prog{margin-top:4px}
+.r2-bar-bg{height:5px;background:var(--br);border-radius:3px;overflow:hidden;margin-top:2px}
+.r2-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--s),var(--p));transition:width .7s ease}
+
+/* Var utama */
+.var-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+  border-radius:50px;font-size:10px;font-weight:600;
+  background:rgba(2,131,145,.1);color:var(--s);border:1px solid rgba(2,131,145,.2)}
+
+/* Chart wrapper */
+.chart-wrap{background:var(--bg);border:1px solid var(--br);border-radius:var(--r);padding:8px;margin-top:4px}
+.chart-ttl{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--tmu);margin-bottom:10px}
+
+/* ── MENU 2 Analysis Panel ── */
+.samp-id{display:inline-block;background:var(--p);color:#fff;font-size:10px;font-weight:700;
+  padding:3px 9px;border-radius:5px;margin-bottom:8px;letter-spacing:.5px}
+.price-act{background:linear-gradient(135deg,#065F46,#059669);border-radius:var(--r);padding:10px 12px;margin-bottom:10px}
+.price-act .val-lbl{color:rgba(255,255,255,.65)}
+.dist-tbl{width:100%;border-collapse:collapse;font-size:10.5px}
+.dist-tbl tr{border-bottom:1px solid var(--br)}
+.dist-tbl tr:last-child{border:none}
+.dist-tbl td{padding:5px 2px;color:var(--tm)}
+.dist-tbl td:first-child{color:var(--ts);font-size:9.5px;width:55%}
+.dist-tbl td:last-child{font-weight:700;color:var(--p);text-align:right}
+.dist-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--tmu);padding:8px 2px 3px;display:block}
+
+/* ════ BOTTOM DASHBOARD ════ */
+#bd{position:fixed;bottom:12px;left:244px;right:324px;z-index:1000;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.bmc{background:var(--wh);border:1px solid var(--br);border-radius:var(--rl);
+  padding:14px 16px;box-shadow:var(--sh1);position:relative;overflow:hidden;transition:transform .2s}
+.bmc:hover{transform:translateY(-1px)}
+.bmc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 16px 16px}
+.bmc.c1::after{background:linear-gradient(90deg,var(--p),var(--s))}
+.bmc.c2::after{background:linear-gradient(90deg,var(--s),#4ade80)}
+.bmc.c3::after{background:linear-gradient(90deg,var(--a),#F85525)}
+.bmc.c4::after{background:linear-gradient(90deg,var(--p),var(--a))}
+.bmc-ico{font-size:14px;margin-bottom:5px}
+.bmc-l{font-size:8.5px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--tmu);margin-bottom:3px}
+.bmc-v{font-size:20px;font-weight:800;color:var(--p);letter-spacing:-.5px;transition:all .3s}
+.bmc-s{font-size:9.5px;color:var(--ts);margin-top:2px;font-weight:500}
+
+/* ════ LEGEND ════ */
+#leg{position:fixed;bottom:12px;left:12px;z-index:1000;
+  background:var(--wh);border:1px solid var(--br);border-radius:var(--rl);
+  box-shadow:var(--sh1);width:230px;overflow:hidden;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+#leg.collapsed #leg-body{display:none}
+#leg.collapsed{width:auto}
+
+.leg-hd{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;cursor:pointer;user-select:none;gap:8px}
+.leg-hd:hover{background:var(--bg)}
+.leg-ttl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ts);flex:1}
+.leg-tog{width:20px;height:20px;border-radius:6px;background:var(--bg);border:1px solid var(--br);
+  display:flex;align-items:center;justify-content:center;font-size:10px;
+  transition:all .25s;flex-shrink:0;color:var(--ts)}
+.leg-tog:hover{background:var(--p);color:#fff;border-color:var(--p)}
+#leg.collapsed .leg-tog{transform:rotate(180deg)}
+
+#leg-body{padding:0 12px 11px}
+
+/* gradient legend (Menu 1) */
+.leg-grad{height:8px;border-radius:4px;margin-bottom:4px}
+.leg-lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--tmu)}
+
+/* icon legend (Menu 2) */
+.leg-section{margin-bottom:9px}
+.leg-section:last-child{margin-bottom:0}
+.leg-sec-ttl{font-size:8.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--tmu);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--br)}
+.leg-row{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:10.5px;color:var(--tm);font-weight:500}
+.leg-ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;border:2px solid rgba(255,255,255,.9);
+  box-shadow:0 1px 4px rgba(0,0,0,.18);flex-shrink:0}
+.leg-dot{width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,.8);
+  box-shadow:0 1px 3px rgba(0,0,0,.2);flex-shrink:0}
+.leg-line{width:20px;height:3px;flex-shrink:0;border-radius:2px}
+.leg-dash{width:20px;height:0;flex-shrink:0;border-top:2px dashed}
+
+/* ════ CLICK PULSE MARKER ════ */
+@keyframes clickPulse{
+  0%  {box-shadow:0 0 0 0 rgba(1,32,78,.5);transform:scale(1)}
+  50% {box-shadow:0 0 0 14px rgba(1,32,78,0);transform:scale(1.1)}
+  100%{box-shadow:0 0 0 0 rgba(1,32,78,0);transform:scale(1)}
+}
+.click-mk{width:14px;height:14px;background:var(--wh);border:3px solid var(--p);
+  border-radius:50%;animation:clickPulse 1.6s ease infinite;box-shadow:0 0 0 0 rgba(1,32,78,.5)}
+
+/* ════ HOTSPOT MARKER ════ */
+@keyframes hsPulse{0%{box-shadow:0 0 0 0 rgba(248,85,37,.5)}70%{box-shadow:0 0 0 12px rgba(248,85,37,0)}100%{box-shadow:0 0 0 0 rgba(248,85,37,0)}}
+.hs-mk{width:14px;height:14px;background:#F85525;border:2px solid var(--wh);border-radius:50%;animation:hsPulse 2s infinite}
+
+/* ════ FACILITY ICON MARKERS ════ */
+.fac-mk{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;line-height:1;
+  border:2.5px solid rgba(255,255,255,.95);
+  box-shadow:0 2px 8px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.15);
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
+  position:relative;
+}
+.fac-mk:hover{transform:scale(1.2);box-shadow:0 4px 14px rgba(0,0,0,.3)}
+/* sub-label badge below icon */
+.fac-mk .fac-lbl{
+  position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);
+  background:rgba(1,32,78,.82);color:#fff;font-size:8px;font-weight:700;
+  padding:1px 5px;border-radius:4px;white-space:nowrap;pointer-events:none;
+  font-family:'Inter',sans-serif;letter-spacing:.2px;
+  opacity:0;transition:opacity .15s;
+}
+.fac-mk:hover .fac-lbl{opacity:1}
+
+/* color themes per category */
+.fac-mk.pend {background:linear-gradient(135deg,#0E7490,#028391)}
+.fac-mk.kes  {background:linear-gradient(135deg,#DC2626,#EF4444)}
+.fac-mk.kom  {background:linear-gradient(135deg,#D97706,#FAA968)}
+.fac-mk.pt   {background:linear-gradient(135deg,#01204E,#1E3A8A)}
+
+/* ════ TOAST ════ */
+.toast{position:fixed;bottom:150px;left:50%;transform:translateX(-50%);z-index:3000;
+  background:var(--p);color:#fff;padding:9px 18px;border-radius:50px;
+  font-size:11.5px;font-weight:600;pointer-events:none;
+  animation:tIn .3s ease,tOut .3s ease 2.5s forwards;white-space:nowrap}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes tOut{to{opacity:0;transform:translateX(-50%) translateY(-6px)}}
+
+/* Leaflet overrides */
+.leaflet-control-zoom{border:none!important;box-shadow:var(--sh1)!important}
+.leaflet-control-zoom a{background:var(--wh)!important;color:var(--p)!important;border:1px solid var(--br)!important;font-size:16px!important;transition:all .2s!important}
+.leaflet-control-zoom a:hover{background:var(--p)!important;color:#fff!important}
+.leaflet-tooltip{background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important}
+.leaflet-tooltip::before{display:none!important}
+.ttp{background:var(--wh);border:1px solid var(--br);border-radius:10px;padding:8px 12px;
+  font-family:'Inter',sans-serif;font-size:11px;color:var(--tm);box-shadow:var(--sh1);white-space:nowrap}
+.ttp strong{color:var(--p)}
+.ttp .ttp-sub{color:var(--ts);font-size:10px}
+.leaflet-popup-content-wrapper{border-radius:var(--rl)!important;box-shadow:var(--sh2)!important;border:1px solid var(--br)!important;padding:0!important}
+.leaflet-popup-content{margin:0!important;min-width:240px}
+.leaflet-popup-tip-container{margin-top:-1px}
+
+/* ════ LOADING ════ */
+#load{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--wh);transition:opacity .7s}
+.l-bar{width:240px;height:3px;background:var(--br);border-radius:2px;margin-top:24px;overflow:hidden}
+.l-fill{height:100%;background:linear-gradient(90deg,var(--s),var(--a));border-radius:2px;animation:lfill 2s ease forwards}
+@keyframes lfill{from{width:0}to{width:100%}}
+</style>
+</head>
+<body>
+
+<!-- ════ LOADING ════ -->
+<div id="load">
+  <div style="width:44px;height:44px;background:var(--p);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px">🗺️</div>
+  <div style="font-size:18px;font-weight:800;color:var(--p);letter-spacing:-.3px">WebGIS Prediksi Nilai Lahan</div>
+  <div style="font-size:12px;color:var(--ts);margin-top:5px">OLS Spatial Regression · Gubeng, Surabaya</div>
+  <div class="l-bar"><div class="l-fill"></div></div>
+</div>
+
+<!-- ════ NAVBAR ════ -->
+<nav id="nav">
+  <div class="nav-brand">
+    <div class="nav-brand-ico">🏙️</div>
+    <div class="nav-brand-text">
+      <div class="nav-brand-title">WebGIS Prediksi Nilai Lahan</div>
+      <div class="nav-brand-sub">Kecamatan Gubeng · Kota Surabaya</div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab on" onclick="switchMenu(1,this)">
+      <span class="tab-no">1</span> Analisis Regresi OLS
+    </button>
+    <button class="nav-tab" onclick="switchMenu(2,this)">
+      <span class="tab-no">2</span> Data &amp; Variabel
+    </button>
+  </div>
+
+  <div class="nav-right">
+    <div class="nav-dot"></div>
+    <div class="nav-stat">6 Kelurahan · 50 Sampel · R²=0.81</div>
+  </div>
+</nav>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- BASEMAP -->
+<div id="bsw">
+  <button class="bm on" onclick="swBm('positron',this)">Dasar</button>
+  <button class="bm" onclick="swBm('dark',this)">Gelap</button>
+  <button class="bm" onclick="swBm('sat',this)">Satelit</button>
+  <button class="bm" onclick="swBm('osm',this)">Street</button>
+</div>
+
+<!-- LAYER PANEL -->
+<div id="lp">
+  <div class="lp-head">
+    <div class="lp-title" id="lpTitle">Layer · Menu 1</div>
+  </div>
+
+  <!-- MENU 1 LAYERS -->
+  <div id="lp-m1">
+    <div class="lp-sec">Nilai Lahan</div>
+    <div class="ltog on" data-l="olsMain" onclick="togL('olsMain',this)">
+      <div class="l-ico" style="background:rgba(1,32,78,.08)">📊</div>
+      <div class="l-inf"><div class="l-name">Prediksi Nilai Lahan OLS</div><div class="l-desc">Choropleth hasil model</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="zonaTinggi" onclick="togL('zonaTinggi',this)">
+      <div class="l-ico" style="background:rgba(1,32,78,.08)">🔵</div>
+      <div class="l-inf"><div class="l-name">Zona Nilai Tinggi</div><div class="l-desc">≥ Rp 12 Jt/m²</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="zonaSedang" onclick="togL('zonaSedang',this)">
+      <div class="l-ico" style="background:rgba(2,131,145,.08)">🟢</div>
+      <div class="l-inf"><div class="l-name">Zona Nilai Sedang</div><div class="l-desc">Rp 8–12 Jt/m²</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="zonaRendah" onclick="togL('zonaRendah',this)">
+      <div class="l-ico" style="background:rgba(250,169,104,.1)">🟡</div>
+      <div class="l-inf"><div class="l-name">Zona Nilai Rendah</div><div class="l-desc">&lt; Rp 8 Jt/m²</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="lp-div"></div>
+    <div class="lp-sec">Indeks</div>
+    <div class="ltog" data-l="accIndex" onclick="togL('accIndex',this)">
+      <div class="l-ico" style="background:rgba(2,131,145,.08)">♿</div>
+      <div class="l-inf"><div class="l-name">Accessibility Index</div><div class="l-desc">Keterlayanan fasilitas</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="lp-div"></div>
+    <div class="lp-sec">Analisis</div>
+    <div class="ltog" data-l="hotspot" onclick="togL('hotspot',this)">
+      <div class="l-ico" style="background:rgba(248,85,37,.08)">🔥</div>
+      <div class="l-inf"><div class="l-name">Hotspot Nilai Lahan</div><div class="l-desc">Titik nilai tertinggi</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="spatReg" onclick="togL('spatReg',this)">
+      <div class="l-ico" style="background:rgba(1,32,78,.08)">🧮</div>
+      <div class="l-inf"><div class="l-name">Hasil Spatial Regression</div><div class="l-desc">Residual &amp; R² wilayah</div></div>
+      <div class="tsw"></div>
+    </div>
+  </div>
+
+  <!-- MENU 2 LAYERS -->
+  <div id="lp-m2" style="display:none">
+    <div class="lp-sec">Administrasi</div>
+    <div class="ltog on" data-l="btsKec" onclick="togL('btsKec',this)">
+      <div class="l-ico" style="background:rgba(1,32,78,.08)">🏛️</div>
+      <div class="l-inf"><div class="l-name">Batas Kecamatan</div><div class="l-desc">Gubeng</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog on" data-l="btsKel" onclick="togL('btsKel',this)">
+      <div class="l-ico" style="background:rgba(2,131,145,.08)">🗺️</div>
+      <div class="l-inf"><div class="l-name">Batas Kelurahan</div><div class="l-desc">6 kelurahan</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="lp-div"></div>
+    <div class="lp-sec">Sampel &amp; Harga</div>
+    <div class="ltog" data-l="sampelPt" onclick="togL('sampelPt',this)">
+      <div class="l-ico" style="background:rgba(1,32,78,.08)">📍</div>
+      <div class="l-inf"><div class="l-name">Titik Sampel Harga</div><div class="l-desc">50 titik random sampling</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="hargaAsli" onclick="togL('hargaAsli',this)">
+      <div class="l-ico" style="background:rgba(250,169,104,.1)">💰</div>
+      <div class="l-inf"><div class="l-name">Harga Lahan Asli</div><div class="l-desc">Choropleth harga aktual</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="lp-div"></div>
+    <div class="lp-sec">Fasilitas</div>
+    <div class="ltog" data-l="fPend" onclick="togL('fPend',this)">
+      <div class="l-ico" style="background:rgba(2,131,145,.08)">🎓</div>
+      <div class="l-inf"><div class="l-name">Fasilitas Pendidikan</div><div class="l-desc">SD, SMP, SMA</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="fPT" onclick="togL('fPT',this)">
+      <div class="l-ico" style="background:rgba(1,32,78,.08)">🏛️</div>
+      <div class="l-inf"><div class="l-name">Perguruan Tinggi</div><div class="l-desc">Negeri &amp; swasta</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="fKes" onclick="togL('fKes',this)">
+      <div class="l-ico" style="background:rgba(250,169,104,.1)">🏥</div>
+      <div class="l-inf"><div class="l-name">Fasilitas Kesehatan</div><div class="l-desc">Puskesmas, RS</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="fKom" onclick="togL('fKom',this)">
+      <div class="l-ico" style="background:rgba(248,85,37,.08)">🛒</div>
+      <div class="l-inf"><div class="l-name">Fasilitas Komersial</div><div class="l-desc">Mall, pasar, minimarket</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="lp-div"></div>
+    <div class="lp-sec">Spasial</div>
+    <div class="ltog" data-l="buffer" onclick="togL('buffer',this)">
+      <div class="l-ico" style="background:rgba(2,131,145,.08)">⭕</div>
+      <div class="l-inf"><div class="l-name">Buffer Analisis</div><div class="l-desc">Radius layanan 500m</div></div>
+      <div class="tsw"></div>
+    </div>
+    <div class="ltog" data-l="allVars" onclick="togL('allVars',this)">
+      <div class="l-ico" style="background:rgba(1,32,78,.08)">🔗</div>
+      <div class="l-inf"><div class="l-name">Seluruh Variabel OLS</div><div class="l-desc">Tampilkan semua sekaligus</div></div>
+      <div class="tsw"></div>
+    </div>
+  </div>
+</div>
+
+<!-- WELCOME HINT -->
+<div id="ap-hint">
+  <div id="hint-m1">
+    <div class="hint-ico">📊</div>
+    <div class="hint-ttl">Pilih Wilayah di Peta</div>
+    <div class="hint-txt">Klik polygon kelurahan untuk menampilkan hasil prediksi nilai lahan OLS, indeks aksesibilitas, dan kontribusi tiap variabel regresi.</div>
+    <div class="hint-badge">🧮 OLS Spatial Regression · R²=0.814 · n=50</div>
+  </div>
+  <div id="hint-m2" style="display:none">
+    <div class="hint-ico">📍</div>
+    <div class="hint-ttl">Pilih Titik Sampel</div>
+    <div class="hint-txt">Aktifkan layer "Titik Sampel Harga" lalu klik salah satu titik untuk melihat data lengkap harga lahan aktual dan jarak ke seluruh fasilitas yang menjadi variabel OLS.</div>
+    <div class="hint-badge">📋 50 Titik Sampel · Kec. Gubeng</div>
+  </div>
+</div>
+
+<!-- ANALYSIS PANEL -->
+<div id="ap">
+  <!-- MENU 1 Panel -->
+  <div id="ap-m1-content">
+    <div class="ap-hd">
+      <div class="ap-tag" id="ap1-kec">Kecamatan</div>
+      <div class="ap-name" id="ap1-kel">—</div>
+      <div class="ap-sub" id="ap1-sub">—</div>
+      <button class="ap-cls" onclick="closeAp()">✕</button>
+    </div>
+    <div class="ap-body">
+      <div class="val-card">
+        <div class="val-lbl">Prediksi Nilai Lahan (OLS)</div>
+        <div><span class="val-num" id="ap1-ols">—</span><span class="val-unit">Rp/m²</span></div>
+        <div class="val-sub">Model regresi OLS log-linear</div>
+      </div>
+      <div id="ap1-zona"></div>
+
+      <div class="mrow" style="margin-top:10px">
+        <div class="mc2">
+          <div class="mc2-l">Accessibility</div>
+          <div class="mc2-v" id="ap1-acc">—</div>
+          <div class="mc2-s">Indeks 0–100</div>
+        </div>
+
+      </div>
+
+      <div class="stit">Variabel Dominan</div>
+      <div id="ap1-vardom" style="margin-bottom:10px"></div>
+
+      <div class="stit">Kontribusi Variabel OLS</div>
+      <div class="chart-wrap">
+        <div class="chart-ttl">Besaran Koefisien Beta (Standarisasi)</div>
+        <canvas id="varChart" height="130"></canvas>
+      </div>
+
+      <div class="stit">Model Fit</div>
+      <div class="r2-card">
+        <div class="r2-grid">
+          <div class="r2-item">
+            <div class="r2-l">R² (Goodness of Fit)</div>
+            <div class="r2-v" id="ap1-r2">—</div>
+          </div>
+          <div class="r2-item">
+            <div class="r2-l">Adj. R²</div>
+            <div class="r2-v" id="ap1-adjr2">—</div>
+          </div>
+          <div class="r2-item">
+            <div class="r2-l">Conf. Level</div>
+            <div class="r2-v" id="ap1-conf">—</div>
+          </div>
+          <div class="r2-item">
+            <div class="r2-l">F-statistic</div>
+            <div class="r2-v">47.23</div>
+          </div>
+        </div>
+        <div class="r2-prog">
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tmu)">
+            <span>Kualitas Model</span><span id="ap1-r2pct">—</span>
+          </div>
+          <div class="r2-bar-bg"><div class="r2-bar-fill" id="ap1-r2bar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="stit">Aksesibilitas Fasilitas</div>
+      <div class="prog-row">
+        <div class="prog-hd"><span class="prog-lbl">🛒 Komersial</span><span class="prog-pct" id="p-kom">—</span></div>
+        <div class="prog-bg"><div class="prog-fill" id="pb-kom" style="width:0%;background:linear-gradient(90deg,var(--a),#F85525)"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-hd"><span class="prog-lbl">🏛️ Perguruan Tinggi</span><span class="prog-pct" id="p-pt">—</span></div>
+        <div class="prog-bg"><div class="prog-fill" id="pb-pt" style="width:0%;background:linear-gradient(90deg,var(--p),var(--s))"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-hd"><span class="prog-lbl">🎓 Pendidikan</span><span class="prog-pct" id="p-pend">—</span></div>
+        <div class="prog-bg"><div class="prog-fill" id="pb-pend" style="width:0%;background:linear-gradient(90deg,var(--s),#4ade80)"></div></div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-hd"><span class="prog-lbl">🏥 Kesehatan</span><span class="prog-pct" id="p-kes">—</span></div>
+        <div class="prog-bg"><div class="prog-fill" id="pb-kes" style="width:0%;background:linear-gradient(90deg,#FAA968,#FCD34D)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENU 2 Panel -->
+  <div id="ap-m2-content" style="display:none">
+    <div class="ap-hd">
+      <div class="ap-tag">📍 Data Sampel</div>
+      <div class="ap-name" id="ap2-id">—</div>
+      <div class="ap-sub" id="ap2-loc">—</div>
+      <button class="ap-cls" onclick="closeAp()">✕</button>
+    </div>
+    <div class="ap-body">
+      <div class="price-act">
+        <div class="val-lbl">Harga Lahan Aktual</div>
+        <div><span class="val-num" id="ap2-harga">—</span><span class="val-unit">Rp/m²</span></div>
+        <div class="val-sub" id="ap2-coord">—</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div class="mc2">
+          <div class="mc2-l">OLS Estimated</div>
+          <div class="mc2-v" id="ap2-est" style="font-size:13px">—</div>
+          <div class="mc2-s">Prediksi model</div>
+        </div>
+        <div class="mc2">
+          <div class="mc2-l">Residual</div>
+          <div class="mc2-v" id="ap2-res" style="font-size:13px">—</div>
+          <div class="mc2-s">Aktual − Prediksi</div>
+        </div>
+      </div>
+
+      <div class="stit">Jarak ke Fasilitas (Variabel OLS)</div>
+      <table class="dist-tbl">
+        <thead></thead>
+        <tbody>
+          <tr><td colspan="2"><span class="dist-cat">🎓 Fasilitas Pendidikan</span></td></tr>
+          <tr><td>Sekolah Dasar (SD)</td><td id="d-sd">— m</td></tr>
+          <tr><td>Sekolah Menengah Pertama (SMP)</td><td id="d-smp">— m</td></tr>
+          <tr><td>Sekolah Menengah Atas (SMA)</td><td id="d-sma">— m</td></tr>
+          <tr><td colspan="2"><span class="dist-cat">🏛️ Perguruan Tinggi</span></td></tr>
+          <tr><td>PT Negeri</td><td id="d-ptn">— m</td></tr>
+          <tr><td>PT Swasta</td><td id="d-pts">— m</td></tr>
+          <tr><td colspan="2"><span class="dist-cat">🏥 Fasilitas Kesehatan</span></td></tr>
+          <tr><td>Puskesmas</td><td id="d-pkm">— m</td></tr>
+          <tr><td>Rumah Sakit</td><td id="d-rs">— m</td></tr>
+          <tr><td colspan="2"><span class="dist-cat">🛒 Fasilitas Komersial</span></td></tr>
+          <tr><td>Mall / Pusat Perbelanjaan</td><td id="d-mall">— m</td></tr>
+          <tr><td>Supermarket</td><td id="d-spm">— m</td></tr>
+          <tr><td>Minimarket</td><td id="d-mini">— m</td></tr>
+          <tr><td>Pasar Tradisional</td><td id="d-psr">— m</td></tr>
+        </tbody>
+      </table>
+
+      <div class="stit" style="margin-top:14px">Nilai Variabel dalam Model OLS</div>
+      <div class="r2-card">
+        <div class="r2-grid">
+          <div class="r2-item"><div class="r2-l">ln(d_pend)</div><div class="r2-v" id="v-pend">—</div></div>
+          <div class="r2-item"><div class="r2-l">ln(d_kes)</div><div class="r2-v" id="v-kes">—</div></div>
+          <div class="r2-item"><div class="r2-l">ln(d_kom)</div><div class="r2-v" id="v-kom">—</div></div>
+          <div class="r2-item"><div class="r2-l">ln(d_pt)</div><div class="r2-v" id="v-pt">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM DASHBOARD -->
+<div id="bd">
+  <div class="bmc c1">
+    <div class="bmc-ico">📊</div>
+    <div class="bmc-l" id="bd1-l">Nilai Lahan OLS</div>
+    <div class="bmc-v" id="bd1-v">—</div>
+    <div class="bmc-s" id="bd1-s">Prediksi model regresi</div>
+  </div>
+  <div class="bmc c2">
+    <div class="bmc-ico">♿</div>
+    <div class="bmc-l" id="bd2-l">Accessibility Index</div>
+    <div class="bmc-v" id="bd2-v">—</div>
+    <div class="bmc-s" id="bd2-s">Keterlayanan fasilitas</div>
+  </div>
+  <div class="bmc c3">
+    <div class="bmc-ico">💼</div>
+    
+  <div class="bmc c4">
+    <div class="bmc-ico">🧮</div>
+    <div class="bmc-l" id="bd4-l">Regression R²</div>
+    <div class="bmc-v" id="bd4-v">0.814</div>
+    <div class="bmc-s" id="bd4-s">OLS global model</div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div id="leg">
+  <div class="leg-hd" onclick="toggleLeg()">
+    <div class="leg-ttl" id="leg-ttl">Legenda Peta</div>
+    <div class="leg-tog" id="leg-tog-btn">▲</div>
+  </div>
+  <div id="leg-body">
+
+    <!-- Menu 1: Gradient -->
+    <div id="leg-m1">
+      <div class="leg-grad" id="leg-grad" style="background:linear-gradient(90deg,#EBF5FB,#028391,#01204E)"></div>
+      <div class="leg-lbl"><span id="leg-min">6 Jt</span><span>Rendah → Tinggi</span><span id="leg-max">17 Jt</span></div>
+    </div>
+
+    <!-- Menu 2: Icon legend -->
+    <div id="leg-m2" style="display:none">
+
+      <div class="leg-section">
+        <div class="leg-sec-ttl">🗺️ Administrasi</div>
+        <div class="leg-row">
+          <div class="leg-line" style="background:#01204E;border:none;height:2.5px"></div>
+          Batas Kecamatan
+        </div>
+        <div class="leg-row">
+          <div class="leg-dash" style="border-color:#028391"></div>
+          Batas Kelurahan
+        </div>
+      </div>
+
+      <div class="leg-section">
+        <div class="leg-sec-ttl">📍 Sampel Harga Lahan</div>
+        <div class="leg-row">
+          <div class="leg-dot" style="background:#01204E"></div>
+          Kec. Gubeng (50 titik sampel)
+        </div>
+      </div>
+
+      <div class="leg-section">
+        <div class="leg-sec-ttl">🎓 Fasilitas Pendidikan</div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#0E7490,#028391)">📚</div>
+          Sekolah Dasar (SD)
+        </div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#0E7490,#028391)">✏️</div>
+          Sekolah Menengah Pertama
+        </div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#0E7490,#028391)">🎓</div>
+          Sekolah Menengah Atas
+        </div>
+      </div>
+
+      <div class="leg-section">
+        <div class="leg-sec-ttl">🏛️ Perguruan Tinggi</div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#01204E,#1E3A8A)">🏛️</div>
+          PT Negeri (PTN)
+        </div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#01204E,#1E3A8A)">🎓</div>
+          PT Swasta (PTS)
+        </div>
+      </div>
+
+      <div class="leg-section">
+        <div class="leg-sec-ttl">🏥 Fasilitas Kesehatan</div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#DC2626,#EF4444)">🏥</div>
+          Rumah Sakit (RS)
+        </div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#DC2626,#EF4444)">⛑️</div>
+          Puskesmas
+        </div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#DC2626,#EF4444)">💊</div>
+          Klinik
+        </div>
+      </div>
+
+      <div class="leg-section">
+        <div class="leg-sec-ttl">🛒 Fasilitas Komersial</div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#D97706,#FAA968)">🏬</div>
+          Mall / Pusat Perbelanjaan
+        </div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#D97706,#FAA968)">🧺</div>
+          Pasar Tradisional
+        </div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#D97706,#FAA968)">🛒</div>
+          Supermarket
+        </div>
+        <div class="leg-row">
+          <div class="leg-ico" style="background:linear-gradient(135deg,#D97706,#FAA968)">🏪</div>
+          Minimarket
+        </div>
+      </div>
+
+    </div><!-- /leg-m2 -->
+  </div><!-- /leg-body -->
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════
+// 1. SEEDED RNG (reproducible dummy data)
+// ══════════════════════════════════════════════
+function mkRng(seed){
+  let s=seed>>>0;
+  return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296};
+}
+const rng=mkRng(42);
+
+// ══════════════════════════════════════════════
+// 2. KELURAHAN DATA (Menu 1)
+// ══════════════════════════════════════════════
+// koef = standarized beta OLS coefficients
+const KD={
+  "Airlangga":  {kec:"Gubeng",ols:24251180,zona:"tinggi", n:7},
+  "Baratajaya": {kec:"Gubeng",ols:11641912,zona:"rendah", n:11},
+  "Gubeng":     {kec:"Gubeng",ols:23966721,zona:"tinggi", n:7},
+  "Kertajaya":  {kec:"Gubeng",ols:13776704,zona:"rendah", n:7},
+  "Mojo":       {kec:"Gubeng",ols:16968924,zona:"sedang", n:10},
+  "Pucangsewu": {kec:"Gubeng",ols:14973435,zona:"sedang", n:8},
+};
+
+// ══════════════════════════════════════════════
+// 3. GEOJSON KELURAHAN
+// ══════════════════════════════════════════════
+// ┌─────────────────────────────────────────────────────────────┐
+// │  GANTI DATA INI DENGAN GEOJSON ASLI DARI SHP ANDA          │
+// │  Syarat: setiap Feature harus punya properties.kel          │
+// │  berisi nama kelurahan yang sama dengan kunci di KD di atas │
+// │  Contoh konversi SHP → GeoJSON:                            │
+// │    ogr2ogr -f GeoJSON kelurahan.geojson kelurahan.shp      │
+// │  atau gunakan QGIS: Layer → Save As → GeoJSON              │
+// └─────────────────────────────────────────────────────────────┘
+const GEO={"type":"FeatureCollection","features":[{"type":"Feature","properties":{"kel":"Baratajaya","kec":"Gubeng"},"geometry":{"type":"Polygon","coordinates":[[[112.7549658,-7.3016793],[112.7552288,-7.3007405],[112.75571,-7.29906],[112.7558459,-7.2985459],[112.7564571,-7.2962245],[112.7571234,-7.2936368],[112.7575,-7.2921911],[112.7576287,-7.2915439],[112.7577,-7.29083],[112.7577038,-7.2886732],[112.7576612,-7.2871672],[112.7588959,-7.2872744],[112.7600347,-7.2873269],[112.76131,-7.28741],[112.7632445,-7.2875601],[112.763513,-7.2877235],[112.76328,-7.2878704],[112.76319,-7.28852],[112.7630265,-7.2892174],[112.7629446,-7.2897024],[112.76268,-7.29098],[112.7624294,-7.2936458],[112.7622475,-7.2956876],[112.7621029,-7.2975249],[112.7620966,-7.2979306],[112.7620767,-7.2993446],[112.7621148,-7.3013238],[112.7621773,-7.3031951],[112.7621618,-7.3039994],[112.7621657,-7.3042104],[112.7621421,-7.3050182],[112.76204,-7.30582],[112.7618797,-7.3062506],[112.76066,-7.30586],[112.7593034,-7.3054333],[112.7588417,-7.3053038],[112.7568919,-7.3048092],[112.754309,-7.3041209],[112.75447,-7.30354],[112.7546762,-7.3028889],[112.7548825,-7.3019989],[112.7549658,-7.3016793]]]}},{"type":"Feature","properties":{"kel":"Mojo","kec":"Gubeng"},"geometry":{"type":"Polygon","coordinates":[[[112.7763904,-7.2641851],[112.776344,-7.2644752],[112.7765137,-7.2646255],[112.7766022,-7.2646681],[112.7767015,-7.264857],[112.7768386,-7.2650264],[112.7772057,-7.2651736],[112.7775646,-7.265261],[112.7778379,-7.2654337],[112.777882,-7.2656738],[112.7779038,-7.2657903],[112.7778313,-7.2662196],[112.7775893,-7.2661741],[112.7774321,-7.2662318],[112.7768222,-7.2663364],[112.7764282,-7.266336],[112.7759461,-7.2662168],[112.7757589,-7.2669901],[112.7751476,-7.2668619],[112.7749869,-7.2674814],[112.7749811,-7.2681087],[112.7744556,-7.2681294],[112.774344,-7.2685691],[112.77407,-7.26852],[112.7734562,-7.2716559],[112.77337,-7.27202],[112.77308,-7.27311],[112.77256,-7.27624],[112.7724121,-7.277617],[112.77199,-7.28044],[112.7688,-7.28017],[112.7643466,-7.2796527],[112.7647261,-7.2775424],[112.7646823,-7.2774717],[112.7623445,-7.27725],[112.7623627,-7.2767041],[112.76241,-7.27538],[112.76241,-7.27522],[112.76241,-7.2751343],[112.76241,-7.27513],[112.76241,-7.2749509],[112.76241,-7.27491],[112.76241,-7.27474],[112.76241,-7.2746389],[112.76241,-7.27441],[112.76236,-7.27414],[112.7623464,-7.2741155],[112.76231,-7.27405],[112.7622931,-7.2740234],[112.76224,-7.27394],[112.76198,-7.27353],[112.76194,-7.27347],[112.7619263,-7.2734451],[112.7617989,-7.2732127],[112.76177,-7.27316],[112.76163,-7.27289],[112.76135,-7.27241],[112.7612347,-7.2721915],[112.7611318,-7.2720769],[112.7610762,-7.2719921],[112.7605056,-7.2711358],[112.7603734,-7.2708545],[112.7603488,-7.2706646],[112.7603538,-7.2701874],[112.7607377,-7.2701864],[112.7607916,-7.269291],[112.7608127,-7.2686821],[112.7608296,-7.2673245],[112.7608488,-7.2667128],[112.7608887,-7.2659013],[112.7626807,-7.2659139],[112.762695,-7.2656042],[112.762773,-7.2653253],[112.7632336,-7.2644778],[112.7640325,-7.263008],[112.7641973,-7.2628739],[112.7646781,-7.2628646],[112.7691905,-7.2633776],[112.7735332,-7.2638503],[112.7763904,-7.2641851]]]}},{"type":"Feature","properties":{"kel":"Gubeng","kec":"Gubeng"},"geometry":{"type":"Polygon","coordinates":[[[112.7442999,-7.2734664],[112.74479,-7.27259],[112.74514,-7.27215],[112.74747,-7.27001],[112.7497586,-7.2678581],[112.7499879,-7.2679876],[112.7501686,-7.2681478],[112.750461,-7.268076],[112.7508686,-7.2679722],[112.7511208,-7.2679403],[112.75193,-7.26769],[112.7523224,-7.2677061],[112.7525692,-7.2678445],[112.7528428,-7.2682755],[112.7531807,-7.2686054],[112.7539532,-7.2689247],[112.7543019,-7.2690045],[112.754387,-7.269001],[112.7543717,-7.2690484],[112.7543292,-7.2697218],[112.7543126,-7.269893],[112.7542965,-7.2700596],[112.7540409,-7.2701779],[112.7539596,-7.2705854],[112.7538819,-7.2710132],[112.7546254,-7.2710944],[112.754614,-7.2713925],[112.7549959,-7.2714336],[112.7549866,-7.2718284],[112.7550128,-7.2719678],[112.7550658,-7.2721001],[112.7548619,-7.2721796],[112.7547017,-7.2722117],[112.7545188,-7.2722066],[112.7543953,-7.2721823],[112.7543549,-7.2726332],[112.7539722,-7.2725962],[112.7538779,-7.2732335],[112.7538121,-7.2738163],[112.7529441,-7.2736975],[112.7529016,-7.2739233],[112.7526932,-7.2753377],[112.7526065,-7.2758532],[112.752492,-7.2764028],[112.75237,-7.2772381],[112.7522886,-7.2776587],[112.7503315,-7.2773149],[112.75017,-7.27727],[112.74915,-7.27704],[112.74895,-7.27699],[112.7479966,-7.2767807],[112.74658,-7.27651],[112.7463041,-7.2764475],[112.7461556,-7.2763472],[112.7458024,-7.2764953],[112.7454291,-7.2766473],[112.7452209,-7.2767925],[112.7449129,-7.276907],[112.74479,-7.27697],[112.7445626,-7.2770566],[112.74437,-7.27713],[112.7440973,-7.2772352],[112.7438315,-7.2764877],[112.7437084,-7.276077],[112.7436659,-7.2757379],[112.7436571,-7.2751824],[112.7437272,-7.2747068],[112.74391,-7.27426],[112.7442999,-7.2734664]]]}},{"type":"Feature","properties":{"kel":"Kertajaya","kec":"Gubeng"},"geometry":{"type":"Polygon","coordinates":[[[112.7503315,-7.2773149],[112.7522886,-7.2776587],[112.75375,-7.27792],[112.75425,-7.27801],[112.7545358,-7.2780706],[112.75458,-7.27808],[112.7549656,-7.2781368],[112.7552286,-7.2781743],[112.7558373,-7.2783016],[112.7568888,-7.2785039],[112.75824,-7.27867],[112.7591961,-7.278826],[112.7604042,-7.2790413],[112.76095,-7.27912],[112.7615095,-7.2792473],[112.7622427,-7.2793537],[112.7621607,-7.2804663],[112.7621461,-7.2821493],[112.76213,-7.28301],[112.7621577,-7.2832362],[112.76218,-7.28337],[112.762396,-7.2841499],[112.76265,-7.28511],[112.7632445,-7.2875601],[112.76131,-7.28741],[112.7600347,-7.2873269],[112.7588959,-7.2872744],[112.7576612,-7.2871672],[112.756871,-7.2871112],[112.75581,-7.28701],[112.75582,-7.28431],[112.75391,-7.28427],[112.7520418,-7.2842826],[112.7518526,-7.2842839],[112.75095,-7.28429],[112.7509537,-7.2841388],[112.7509563,-7.283926],[112.7503651,-7.283806],[112.7496733,-7.2835703],[112.7490099,-7.2834194],[112.7491594,-7.2827699],[112.7492759,-7.2822153],[112.7493577,-7.2819121],[112.7494304,-7.2815571],[112.7494865,-7.2812467],[112.7496883,-7.2803516],[112.7497805,-7.2799219],[112.7498197,-7.2797581],[112.7499664,-7.2790304],[112.7500257,-7.2787517],[112.7501507,-7.2782554],[112.7502842,-7.2775372],[112.7503315,-7.2773149]]]}},{"type":"Feature","properties":{"kel":"Airlangga","kec":"Gubeng"},"geometry":{"type":"Polygon","coordinates":[[[112.754387,-7.269001],[112.7544333,-7.2689141],[112.754672,-7.2688821],[112.7548126,-7.2687975],[112.7549081,-7.2686746],[112.7550368,-7.2684671],[112.7551012,-7.2672857],[112.7552192,-7.2668334],[112.7553909,-7.2666153],[112.7559507,-7.2660294],[112.7561545,-7.2658272],[112.7564825,-7.2657825],[112.7566249,-7.2657724],[112.7602231,-7.2658855],[112.7608887,-7.2659013],[112.7608488,-7.2667128],[112.7608296,-7.2673245],[112.7608127,-7.2686821],[112.7607916,-7.269291],[112.7607377,-7.2701864],[112.7603538,-7.2701874],[112.7603488,-7.2706646],[112.7603734,-7.2708545],[112.7605056,-7.2711358],[112.7610762,-7.2719921],[112.7611318,-7.2720769],[112.7612347,-7.2721915],[112.76135,-7.27241],[112.76163,-7.27289],[112.76177,-7.27316],[112.7617989,-7.2732127],[112.7619263,-7.2734451],[112.76194,-7.27347],[112.76198,-7.27353],[112.76224,-7.27394],[112.7622931,-7.2740234],[112.76231,-7.27405],[112.7623464,-7.2741155],[112.76236,-7.27414],[112.76241,-7.27441],[112.76241,-7.2746389],[112.76241,-7.27474],[112.76241,-7.27491],[112.76241,-7.2749509],[112.76241,-7.27513],[112.76241,-7.2751343],[112.76241,-7.27522],[112.76241,-7.27538],[112.7623627,-7.2767041],[112.7623445,-7.27725],[112.7623044,-7.2780972],[112.7623025,-7.2788752],[112.7622427,-7.2793537],[112.7615095,-7.2792473],[112.76095,-7.27912],[112.7604042,-7.2790413],[112.7591961,-7.278826],[112.75824,-7.27867],[112.7568888,-7.2785039],[112.7558373,-7.2783016],[112.7552286,-7.2781743],[112.7549656,-7.2781368],[112.75458,-7.27808],[112.7545358,-7.2780706],[112.75425,-7.27801],[112.75375,-7.27792],[112.7522886,-7.2776587],[112.75237,-7.2772381],[112.752492,-7.2764028],[112.7526065,-7.2758532],[112.7526932,-7.2753377],[112.7529016,-7.2739233],[112.7529441,-7.2736975],[112.7538121,-7.2738163],[112.7538779,-7.2732335],[112.7539722,-7.2725962],[112.7543549,-7.2726332],[112.7543953,-7.2721823],[112.7545188,-7.2722066],[112.7547017,-7.2722117],[112.7548619,-7.2721796],[112.7550658,-7.2721001],[112.7550128,-7.2719678],[112.7549866,-7.2718284],[112.7549959,-7.2714336],[112.754614,-7.2713925],[112.7546254,-7.2710944],[112.7538819,-7.2710132],[112.7539596,-7.2705854],[112.7540409,-7.2701779],[112.7542965,-7.2700596],[112.7543126,-7.269893],[112.7543292,-7.2697218],[112.7543717,-7.2690484],[112.754387,-7.269001]]]}},{"type":"Feature","properties":{"kel":"Pucangsewu","kec":"Gubeng"},"geometry":{"type":"Polygon","coordinates":[[[112.7490099,-7.2834194],[112.7496733,-7.2835703],[112.7503651,-7.283806],[112.7509563,-7.283926],[112.7509537,-7.2841388],[112.75095,-7.28429],[112.7518526,-7.2842839],[112.7520418,-7.2842826],[112.75391,-7.28427],[112.75582,-7.28431],[112.75581,-7.28701],[112.756871,-7.2871112],[112.7576612,-7.2871672],[112.7577038,-7.2886732],[112.7577,-7.29083],[112.7576287,-7.2915439],[112.7575,-7.2921911],[112.7571234,-7.2936368],[112.7558289,-7.2936457],[112.7551458,-7.293606],[112.7544814,-7.2935605],[112.7542699,-7.293536],[112.7536101,-7.2934296],[112.7522849,-7.2931451],[112.7518862,-7.2930354],[112.7507384,-7.2926379],[112.7495734,-7.2921908],[112.7480389,-7.291566],[112.7476669,-7.2913609],[112.7472413,-7.291134],[112.74736,-7.29083],[112.74751,-7.29033],[112.7475299,-7.2902456],[112.74763,-7.28982],[112.7476477,-7.2897423],[112.7478248,-7.2889651],[112.7479085,-7.2885978],[112.74799,-7.28824],[112.7479954,-7.2882143],[112.7480881,-7.2877723],[112.74812,-7.28762],[112.7481767,-7.2873248],[112.7482737,-7.2867584],[112.7485032,-7.2856988],[112.7490099,-7.2834194]]]}}]};
+// Kecamatan outer boundary ring (for reference layer)
+const KEC_RING=[[112.7763904,-7.2641851],[112.776344,-7.2644752],[112.7765137,-7.2646255],[112.7766022,-7.2646681],[112.7767015,-7.264857],[112.7768386,-7.2650264],[112.7772057,-7.2651736],[112.7775646,-7.265261],[112.7778379,-7.2654337],[112.777882,-7.2656738],[112.7779038,-7.2657903],[112.7778313,-7.2662196],[112.7775893,-7.2661741],[112.7774321,-7.2662318],[112.7768222,-7.2663364],[112.7764282,-7.266336],[112.7759461,-7.2662168],[112.7757589,-7.2669901],[112.7751476,-7.2668619],[112.7749869,-7.2674814],[112.7749811,-7.2681087],[112.7744556,-7.2681294],[112.774344,-7.2685691],[112.77407,-7.26852],[112.7734562,-7.2716559],[112.77337,-7.27202],[112.77308,-7.27311],[112.77256,-7.27624],[112.7724121,-7.277617],[112.77199,-7.28044],[112.7688,-7.28017],[112.7643466,-7.2796527],[112.7647261,-7.2775424],[112.7646823,-7.2774717],[112.7623445,-7.27725],[112.7623044,-7.2780972],[112.7623025,-7.2788752],[112.7622427,-7.2793537],[112.7621607,-7.2804663],[112.7621461,-7.2821493],[112.76213,-7.28301],[112.7621577,-7.2832362],[112.76218,-7.28337],[112.762396,-7.2841499],[112.76265,-7.28511],[112.7632445,-7.2875601],[112.763513,-7.2877235],[112.76328,-7.2878704],[112.76319,-7.28852],[112.7630265,-7.2892174],[112.7629446,-7.2897024],[112.76268,-7.29098],[112.7624294,-7.2936458],[112.7622475,-7.2956876],[112.7621029,-7.2975249],[112.7620966,-7.2979306],[112.7620767,-7.2993446],[112.7621148,-7.3013238],[112.7621773,-7.3031951],[112.7621618,-7.3039994],[112.7621657,-7.3042104],[112.7621421,-7.3050182],[112.76204,-7.30582],[112.7618797,-7.3062506],[112.76066,-7.30586],[112.7593034,-7.3054333],[112.7588417,-7.3053038],[112.7568919,-7.3048092],[112.754309,-7.3041209],[112.75447,-7.30354],[112.7546762,-7.3028889],[112.7548825,-7.3019989],[112.7549658,-7.3016793],[112.7552288,-7.3007405],[112.75571,-7.29906],[112.7558459,-7.2985459],[112.7564571,-7.2962245],[112.7571234,-7.2936368],[112.7558289,-7.2936457],[112.7551458,-7.293606],[112.7544814,-7.2935605],[112.7542699,-7.293536],[112.7536101,-7.2934296],[112.7522849,-7.2931451],[112.7518862,-7.2930354],[112.7507384,-7.2926379],[112.7495734,-7.2921908],[112.7480389,-7.291566],[112.7476669,-7.2913609],[112.7472413,-7.291134],[112.74736,-7.29083],[112.74751,-7.29033],[112.7475299,-7.2902456],[112.74763,-7.28982],[112.7476477,-7.2897423],[112.7478248,-7.2889651],[112.7479085,-7.2885978],[112.74799,-7.28824],[112.7479954,-7.2882143],[112.7480881,-7.2877723],[112.74812,-7.28762],[112.7481767,-7.2873248],[112.7482737,-7.2867584],[112.7485032,-7.2856988],[112.7490099,-7.2834194],[112.7491594,-7.2827699],[112.7492759,-7.2822153],[112.7493577,-7.2819121],[112.7494304,-7.2815571],[112.7494865,-7.2812467],[112.7496883,-7.2803516],[112.7497805,-7.2799219],[112.7498197,-7.2797581],[112.7499664,-7.2790304],[112.7500257,-7.2787517],[112.7501507,-7.2782554],[112.7502842,-7.2775372],[112.7503315,-7.2773149],[112.75017,-7.27727],[112.74915,-7.27704],[112.74895,-7.27699],[112.7479966,-7.2767807],[112.74658,-7.27651],[112.7463041,-7.2764475],[112.7461556,-7.2763472],[112.7458024,-7.2764953],[112.7454291,-7.2766473],[112.7452209,-7.2767925],[112.7449129,-7.276907],[112.74479,-7.27697],[112.7445626,-7.2770566],[112.74437,-7.27713],[112.7440973,-7.2772352],[112.7438315,-7.2764877],[112.7437084,-7.276077],[112.7436659,-7.2757379],[112.7436571,-7.2751824],[112.7437272,-7.2747068],[112.74391,-7.27426],[112.7442999,-7.2734664],[112.74479,-7.27259],[112.74514,-7.27215],[112.74747,-7.27001],[112.7497586,-7.2678581],[112.7499879,-7.2679876],[112.7501686,-7.2681478],[112.750461,-7.268076],[112.7508686,-7.2679722],[112.7511208,-7.2679403],[112.75193,-7.26769],[112.7523224,-7.2677061],[112.7525692,-7.2678445],[112.7528428,-7.2682755],[112.7531807,-7.2686054],[112.7539532,-7.2689247],[112.7543019,-7.2690045],[112.754387,-7.269001],[112.7544333,-7.2689141],[112.754672,-7.2688821],[112.7548126,-7.2687975],[112.7549081,-7.2686746],[112.7550368,-7.2684671],[112.7551012,-7.2672857],[112.7552192,-7.2668334],[112.7553909,-7.2666153],[112.7559507,-7.2660294],[112.7561545,-7.2658272],[112.7564825,-7.2657825],[112.7566249,-7.2657724],[112.7602231,-7.2658855],[112.7608887,-7.2659013],[112.7626807,-7.2659139],[112.762695,-7.2656042],[112.762773,-7.2653253],[112.7632336,-7.2644778],[112.7640325,-7.263008],[112.7641973,-7.2628739],[112.7646781,-7.2628646],[112.7691905,-7.2633776],[112.7735332,-7.2638503],[112.7763904,-7.2641851]];
+
+
+// ── Facility data (real GIS data from SHP/KMZ) ──
+const FAC={"komersial":[{"lat":-7.2697176,"lng":112.7512059,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2928074,"lng":112.7605664,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2793397,"lng":112.7591856,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2992127,"lng":112.7557674,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.291546,"lng":112.7598956,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2963521,"lng":112.7598554,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2831985,"lng":112.758654,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2740506,"lng":112.7529972,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2938244,"lng":112.7611794,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2916504,"lng":112.7598473,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2844013,"lng":112.7578396,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2684738,"lng":112.772585,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2763732,"lng":112.7495399,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2667674,"lng":112.7717122,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2773051,"lng":112.7513343,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.3046922,"lng":112.7589088,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2889157,"lng":112.7565156,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2929367,"lng":112.7555394,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.267196,"lng":112.7708798,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2954793,"lng":112.7597789,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2788975,"lng":112.7612177,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2788708,"lng":112.7610594,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2788203,"lng":112.7607295,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2787538,"lng":112.7603459,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2787059,"lng":112.7598926,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2785782,"lng":112.759434,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2785516,"lng":112.7591389,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2784638,"lng":112.7584979,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2784425,"lng":112.7583423,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2783414,"lng":112.7577777,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2782376,"lng":112.7571098,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2781525,"lng":112.7567705,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.278094,"lng":112.7565211,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.278086,"lng":112.7563575,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.27807,"lng":112.756277,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.278062,"lng":112.7561912,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2780195,"lng":112.7561322,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2778651,"lng":112.7655923,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2780195,"lng":112.7659652,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2781631,"lng":112.7659517,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2774554,"lng":112.7660255,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2776417,"lng":112.7660322,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2798686,"lng":112.7689183,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2771574,"lng":112.7507919,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2700055,"lng":112.7606033,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.274157,"lng":112.7558482,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2728282,"lng":112.7618286,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2744317,"lng":112.7622105,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2735536,"lng":112.7456622,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2729361,"lng":112.7477986,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2692285,"lng":112.7608954,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2777625,"lng":112.7510773,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2728629,"lng":112.766516,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2930784,"lng":112.7621518,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.3019646,"lng":112.7618151,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.283949,"lng":112.7543246,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2727182,"lng":112.7494912,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.276601,"lng":112.7509215,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2710606,"lng":112.7599369,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.2716712,"lng":112.7604961,"n":"Fasilitas Komersial","t":"Komersial"},{"lat":-7.271666,"lng":112.760324,"n":"Fasilitas Komersial","t":"Komersial"}],"pendidikan":[{"n":"SDN Airlangga III","lat":-7.2756579,"lng":112.760767,"t":"SD"},{"n":"SDN Baratajaya","lat":-7.3007785,"lng":112.7576659,"t":"SD"},{"n":"SDN Mojo VIII","lat":-7.2707496,"lng":112.7626473,"t":"SD"},{"n":"SDN Airlangga 1 Surabaya","lat":-7.2717255,"lng":112.7558197,"t":"SD"},{"n":"SDN Gubeng I","lat":-7.2723956,"lng":112.7541554,"t":"SD"},{"n":"SDN Gubeng III","lat":-7.2689673,"lng":112.7537078,"t":"SD"},{"n":"SDN Kertajaya","lat":-7.2835212,"lng":112.7598927,"t":"SD"},{"n":"SDN Kertajaya I","lat":-7.2797048,"lng":112.759641,"t":"SD"},{"n":"SDN Kertajaya IV","lat":-7.283537,"lng":112.7517671,"t":"SD"},{"n":"SDN Kertajaya V","lat":-7.2803787,"lng":112.7539425,"t":"SD"},{"n":"SDN Mojo I","lat":-7.266019,"lng":112.76755,"t":"SD"},{"n":"SDN Mojo III","lat":-7.2757134,"lng":112.7636615,"t":"SD"},{"n":"SDN Mojo VI","lat":-7.2692548,"lng":112.7703121,"t":"SD"},{"n":"SMP DHANISWARA","lat":-7.2751001,"lng":112.7635684,"t":"SMP"},{"n":"SMP MUHAMMADIYAH 9 SBY","lat":-7.2727863,"lng":112.7647584,"t":"SMP"},{"n":"SMP GALUH HANDAYANI","lat":-7.2815262,"lng":112.7598735,"t":"SMP"},{"n":"SMP MARYAM","lat":-7.2814743,"lng":112.761627,"t":"SMP"},{"n":"SMP KATOLIK SANTA CLARA","lat":-7.2883896,"lng":112.7602568,"t":"SMP"},{"n":"SEKOLAH MENENGAH PERTAMA NATION STRA ACADEMY","lat":-7.2760554,"lng":112.7713046,"t":"SMP"},{"n":"SMP ISLAM TERPADU AL USWAH","lat":-7.28846,"lng":112.7565281,"t":"SMP"},{"n":"SMP DAPENA 1 SURABAYA","lat":-7.2746534,"lng":112.7449047,"t":"SMP"},{"n":"SMP GIKI 2 SURABAYA","lat":-7.2738663,"lng":112.7472427,"t":"SMP"},{"n":"SMP NEGERI 6 SURABAYA","lat":-7.2737401,"lng":112.748559,"t":"SMP"},{"n":"SMP AL JIHAD SURABAYA","lat":-7.2851304,"lng":112.7495418,"t":"SMP"},{"n":"SMP BAITURRAHMAN","lat":-7.2789391,"lng":112.7507832,"t":"SMP"},{"n":"SMP MUHAMMADIYAH 5 SURABAYA","lat":-7.2834262,"lng":112.7591217,"t":"SMP"},{"n":"SMA Dapena 1 Surabaya","lat":-7.2746543,"lng":112.7447042,"t":"SMA"},{"n":"SMA GIKI 2 Surabaya","lat":-7.2739012,"lng":112.7472279,"t":"SMA"},{"n":"SMA Kertajaya","lat":-7.2788254,"lng":112.7504089,"t":"SMA"},{"n":"SMA & SMK Mahardhika","lat":-7.3026695,"lng":112.7601986,"t":"SMK"},{"n":"SMA Muhammadiyah 2 Surabaya","lat":-7.2840189,"lng":112.7592398,"t":"SMA"},{"n":"SMK Negeri 5 Surabaya","lat":-7.2645293,"lng":112.7690398,"t":"SMK"},{"n":"SMK 45 SURABAYA","lat":-7.2726769,"lng":112.7642597,"t":"SMK"},{"n":"SMK GANESYA 2","lat":-7.2657761,"lng":112.7627703,"t":"SMK"},{"n":"SMK Pariwisata Satya Widya","lat":-7.2745326,"lng":112.7621586,"t":"SMK"}],"kesehatan":[{"n":"Rumah Sakit Umum Siloam Surabaya","lat":-7.2739781,"lng":112.7464503,"t":"RS"},{"n":"RSUD Dr. Soetomo","lat":-7.2682064,"lng":112.7580663,"t":"RS"},{"n":"Rumah Sakit DKT Gubeng","lat":-7.2651263,"lng":112.7516133,"t":"RS"},{"n":"Rumah Sakit Gigi dan Mulut Universitas Airlangga (RSGM UNAIR)","lat":-7.2654174,"lng":112.7574059,"t":"RS"},{"n":"RSIA Ferina","lat":-7.2737952,"lng":112.7448241,"t":"RS"},{"n":"Rumah Sakit KORPRI Pura Raharja","lat":-7.2832379,"lng":112.7527409,"t":"RS"},{"n":"Rumah Sakit Menur Provinsi Jawa Timur","lat":-7.2853922,"lng":112.7621621,"t":"RS"}],"pt":[{"n":"Institut Sains dan Teknologi Terpadu Surabaya (ISTTS)","lat":-7.2912752,"lng":112.7585951,"t":"PTS"},{"n":"Universitas Airlangga - Kampus Dharmawangsa (B)","lat":-7.2721345,"lng":112.7586672,"t":"PTN"},{"n":"Poltekkes Kemenkes Surabaya","lat":-7.283722,"lng":112.761663,"t":"PTN"}]};
+// ══════════════════════════════════════════════
+// 5. GENERATE SAMPLE POINTS (Menu 2, 100 points)
+// ══════════════════════════════════════════════
+function fmtDist(m){return m>=1000?`${(m/1000).toFixed(2)} km`:`${m} m`}
+
+const SAMPLES=[
+  {id:'SP-001',lat:-7.2803369,lng:112.7506227,kec:'Gubeng',actual:7500000,estimated:17633738,residual:-10133738,d_sd:155.6,d_smp:155.6,d_sma:155.6,d_ptn:1269.7,d_pts:1269.7,d_pkm:397.1,d_rs:397.1,d_mall:352.1,d_spm:352.1,d_mini:352.1,d_psr:352.1},
+  {id:'SP-002',lat:-7.2889197,lng:112.7557012,kec:'Gubeng',actual:45000000,estimated:8847553,residual:36152447,d_sd:104.5,d_smp:104.5,d_sma:104.5,d_ptn:412.3,d_pts:412.3,d_pkm:262.9,d_rs:262.9,d_mall:489.6,d_spm:489.6,d_mini:489.6,d_psr:489.6},
+  {id:'SP-003',lat:-7.2799582,lng:112.7543945,kec:'Gubeng',actual:7500000,estimated:9827670,residual:-2327670,d_sd:68.2,d_smp:68.2,d_sma:68.2,d_ptn:904.2,d_pts:904.2,d_pkm:406.1,d_rs:406.1,d_mall:463.4,d_spm:463.4,d_mini:463.4,d_psr:463.4},
+  {id:'SP-004',lat:-7.2967186,lng:112.7574554,kec:'Gubeng',actual:2500000,estimated:18048775,residual:-15548775,d_sd:278.3,d_smp:278.3,d_sma:278.3,d_ptn:515.5,d_pts:515.5,d_pkm:1143.3,d_rs:1143.3,d_mall:290.9,d_spm:290.9,d_mini:290.9,d_psr:290.9},
+  {id:'SP-005',lat:-7.29065,lng:112.7520313,kec:'Gubeng',actual:7500000,estimated:16685996,residual:-9185996,d_sd:356.4,d_smp:356.4,d_sma:356.4,d_ptn:728.2,d_pts:728.2,d_pkm:603.0,d_rs:603.0,d_mall:554.6,d_spm:554.6,d_mini:554.6,d_psr:554.6},
+  {id:'SP-006',lat:-7.2720194,lng:112.7610621,kec:'Gubeng',actual:45000000,estimated:22805322,residual:22194678,d_sd:224.4,d_smp:224.4,d_sma:224.4,d_ptn:264.8,d_pts:264.8,d_pkm:536.0,d_rs:536.0,d_mall:73.4,d_spm:73.4,d_mini:73.4,d_psr:73.4},
+  {id:'SP-007',lat:-7.299461,lng:112.7590111,kec:'Gubeng',actual:7500000,estimated:16843565,residual:-9343566,d_sd:208.1,d_smp:208.1,d_sma:208.1,d_ptn:702.1,d_pts:702.1,d_pkm:1476.8,d_rs:1476.8,d_mall:225.9,d_spm:225.9,d_mini:225.9,d_psr:225.9},
+  {id:'SP-008',lat:-7.2903811,lng:112.7548175,kec:'Gubeng',actual:7500000,estimated:9662354,residual:-2162355,d_sd:49.0,d_smp:49.0,d_sma:49.0,d_ptn:428.7,d_pts:428.7,d_pkm:433.6,d_rs:433.6,d_mall:362.2,d_spm:362.2,d_mini:362.2,d_psr:362.2},
+  {id:'SP-009',lat:-7.2823095,lng:112.7586039,kec:'Gubeng',actual:7500000,estimated:15444452,residual:-7944453,d_sd:136.1,d_smp:136.1,d_sma:136.1,d_ptn:372.2,d_pts:372.2,d_pkm:520.2,d_rs:520.2,d_mall:246.3,d_spm:246.3,d_mini:246.3,d_psr:246.3},
+  {id:'SP-010',lat:-7.2717635,lng:112.7482401,kec:'Gubeng',actual:45000000,estimated:25529624,residual:19470376,d_sd:221.4,d_smp:221.4,d_sma:221.4,d_ptn:1152.3,d_pts:1152.3,d_pkm:314.7,d_rs:314.7,d_mall:138.5,d_spm:138.5,d_mini:138.5,d_psr:138.5},
+  {id:'SP-011',lat:-7.2679919,lng:112.7583392,kec:'Gubeng',actual:4500000,estimated:27274713,residual:-22774714,d_sd:497.9,d_smp:497.9,d_sma:497.9,d_ptn:459.6,d_pts:459.6,d_pkm:38.4,d_rs:38.4,d_mall:382.5,d_spm:382.5,d_mini:382.5,d_psr:382.5},
+  {id:'SP-012',lat:-7.2760528,lng:112.7563033,kec:'Gubeng',actual:45000000,estimated:27961496,residual:17038503,d_sd:468.9,d_smp:468.9,d_sma:468.9,d_ptn:505.9,d_pts:505.9,d_pkm:886.7,d_rs:886.7,d_mall:215.6,d_spm:215.6,d_mini:215.6,d_psr:215.6},
+  {id:'SP-013',lat:-7.2875923,lng:112.761502,kec:'Gubeng',actual:1500000,estimated:17429179,residual:-15929179,d_sd:60.0,d_smp:60.0,d_sma:60.0,d_ptn:428.4,d_pts:428.4,d_pkm:254.0,d_rs:254.0,d_mall:108.1,d_spm:108.1,d_mini:108.1,d_psr:108.1},
+  {id:'SP-014',lat:-7.276088,lng:112.7496298,kec:'Gubeng',actual:45000000,estimated:26316956,residual:18683043,d_sd:285.3,d_smp:285.3,d_sma:285.3,d_ptn:1089.6,d_pts:1089.6,d_pkm:421.6,d_rs:421.6,d_mall:174.5,d_spm:174.5,d_mini:174.5,d_psr:174.5},
+  {id:'SP-015',lat:-7.2876029,lng:112.7493118,kec:'Gubeng',actual:7500000,estimated:14012709,residual:-6512710,d_sd:274.6,d_smp:274.6,d_sma:274.6,d_ptn:1102.7,d_pts:1102.7,d_pkm:613.6,d_rs:613.6,d_mall:600.2,d_spm:600.2,d_mini:600.2,d_psr:600.2},
+  {id:'SP-016',lat:-7.2742925,lng:112.7574692,kec:'Gubeng',actual:7500000,estimated:23736887,residual:-16236887,d_sd:337.3,d_smp:337.3,d_sma:337.3,d_ptn:272.9,d_pts:272.9,d_pkm:676.3,d_rs:676.3,d_mall:179.6,d_spm:179.6,d_mini:179.6,d_psr:179.6},
+  {id:'SP-017',lat:-7.2690605,lng:112.7497679,kec:'Gubeng',actual:45000000,estimated:24737285,residual:20262714,d_sd:435.2,d_smp:435.2,d_sma:435.2,d_ptn:1040.0,d_pts:1040.0,d_pkm:655.8,d_rs:655.8,d_mall:405.7,d_spm:405.7,d_mini:405.7,d_psr:405.7},
+  {id:'SP-018',lat:-7.2897191,lng:112.7514059,kec:'Gubeng',actual:7500000,estimated:16971586,residual:-9471586,d_sd:432.8,d_smp:432.8,d_sma:432.8,d_ptn:812.4,d_pts:812.4,d_pkm:583.3,d_rs:583.3,d_mall:666.8,d_spm:666.8,d_mini:666.8,d_psr:666.8},
+  {id:'SP-019',lat:-7.2912643,lng:112.7543123,kec:'Gubeng',actual:7500000,estimated:14009129,residual:-6509129,d_sd:136.4,d_smp:136.4,d_sma:136.4,d_ptn:473.0,d_pts:473.0,d_pkm:541.8,d_rs:541.8,d_mall:314.3,d_spm:314.3,d_mini:314.3,d_psr:314.3},
+  {id:'SP-020',lat:-7.3000099,lng:112.7577022,kec:'Gubeng',actual:7500000,estimated:8898238,residual:-1398238,d_sd:85.1,d_smp:85.1,d_sma:85.1,d_ptn:807.8,d_pts:807.8,d_pkm:1506.9,d_rs:1506.9,d_mall:366.2,d_spm:366.2,d_mini:366.2,d_psr:366.2},
+  {id:'SP-021',lat:-7.2638149,lng:112.7680705,kec:'Gubeng',actual:3500000,estimated:10259212,residual:-6759212,d_sd:133.1,d_smp:133.1,d_sma:133.1,d_ptn:1387.5,d_pts:1387.5,d_pkm:833.0,d_rs:833.0,d_mall:561.6,d_spm:561.6,d_mini:561.6,d_psr:561.6},
+  {id:'SP-022',lat:-7.2805573,lng:112.7553643,kec:'Gubeng',actual:7500000,estimated:14193495,residual:-6693495,d_sd:158.3,d_smp:158.3,d_sma:158.3,d_ptn:778.7,d_pts:778.7,d_pkm:414.5,d_rs:414.5,d_mall:403.6,d_spm:403.6,d_mini:403.6,d_psr:403.6},
+  {id:'SP-023',lat:-7.2700772,lng:112.7608915,kec:'Gubeng',actual:45000000,estimated:20955958,residual:24044042,d_sd:207.7,d_smp:207.7,d_sma:207.7,d_ptn:334.8,d_pts:334.8,d_pkm:374.4,d_rs:374.4,d_mall:151.5,d_spm:151.5,d_mini:151.5,d_psr:151.5},
+  {id:'SP-024',lat:-7.2748491,lng:112.7678209,kec:'Gubeng',actual:3500000,estimated:20374395,residual:-16874395,d_sd:407.2,d_smp:407.2,d_sma:407.2,d_ptn:1054.5,d_pts:1054.5,d_pkm:563.5,d_rs:563.5,d_mall:544.8,d_spm:544.8,d_mini:544.8,d_psr:544.8},
+  {id:'SP-025',lat:-7.300598,lng:112.758132,kec:'Gubeng',actual:7500000,estimated:7244112,residual:255887,d_sd:55.2,d_smp:55.2,d_sma:55.2,d_ptn:851.0,d_pts:851.0,d_pkm:1578.9,d_rs:1578.9,d_mall:384.5,d_spm:384.5,d_mini:384.5,d_psr:384.5},
+  {id:'SP-026',lat:-7.2759391,lng:112.7515883,kec:'Gubeng',actual:15000000,estimated:27343402,residual:-12343403,d_sd:343.5,d_smp:343.5,d_sma:343.5,d_ptn:887.8,d_pts:887.8,d_pkm:607.5,d_rs:607.5,d_mall:160.9,d_spm:160.9,d_mini:160.9,d_psr:160.9},
+  {id:'SP-027',lat:-7.2722722,lng:112.7468365,kec:'Gubeng',actual:45000000,estimated:25385777,residual:19614222,d_sd:181.9,d_smp:181.9,d_sma:181.9,d_ptn:1306.6,d_pts:1306.6,d_pkm:193.4,d_rs:193.4,d_mall:129.2,d_spm:129.2,d_mini:129.2,d_psr:129.2},
+  {id:'SP-028',lat:-7.2886498,lng:112.7536075,kec:'Gubeng',actual:7500000,estimated:15144623,residual:-7644624,d_sd:270.8,d_smp:270.8,d_sma:270.8,d_ptn:622.6,d_pts:622.6,d_pkm:322.2,d_rs:322.2,d_mall:511.6,d_spm:511.6,d_mini:511.6,d_psr:511.6},
+  {id:'SP-029',lat:-7.2839763,lng:112.7609743,kec:'Gubeng',actual:15000000,estimated:12279902,residual:2720097,d_sd:129.6,d_smp:129.6,d_sma:129.6,d_ptn:81.1,d_pts:81.1,d_pkm:204.3,d_rs:204.3,d_mall:349.4,d_spm:349.4,d_mini:349.4,d_psr:349.4},
+  {id:'SP-030',lat:-7.2794845,lng:112.7712709,kec:'Gubeng',actual:45000000,estimated:14765443,residual:30234556,d_sd:375.0,d_smp:375.0,d_sma:375.0,d_ptn:1160.0,d_pts:1160.0,d_pkm:962.1,d_rs:962.1,d_mall:677.1,d_spm:677.1,d_mini:677.1,d_psr:677.1},
+  {id:'SP-031',lat:-7.2958995,lng:112.756785,kec:'Gubeng',actual:7500000,estimated:17519968,residual:-10019969,d_sd:255.8,d_smp:255.8,d_sma:255.8,d_ptn:513.7,d_pts:513.7,d_pkm:1042.6,d_rs:1042.6,d_mall:291.9,d_spm:291.9,d_mini:291.9,d_psr:291.9},
+  {id:'SP-032',lat:-7.2985773,lng:112.7571359,kec:'Gubeng',actual:15000000,estimated:15767356,residual:-767357,d_sd:250.4,d_smp:250.4,d_sma:250.4,d_ptn:698.8,d_pts:698.8,d_pkm:1341.3,d_rs:1341.3,d_mall:342.3,d_spm:342.3,d_mini:342.3,d_psr:342.3},
+  {id:'SP-033',lat:-7.2720746,lng:112.7598698,kec:'Gubeng',actual:45000000,estimated:26511157,residual:18488842,d_sd:340.0,d_smp:340.0,d_sma:340.0,d_ptn:133.0,d_pts:133.0,d_pkm:471.9,d_rs:471.9,d_mall:82.3,d_spm:82.3,d_mini:82.3,d_psr:82.3},
+  {id:'SP-034',lat:-7.3051949,lng:112.7598732,kec:'Gubeng',actual:15000000,estimated:4235435,residual:10764565,d_sd:281.6,d_smp:281.6,d_sma:281.6,d_ptn:1315.1,d_pts:1315.1,d_pkm:2115.5,d_rs:2115.5,d_mall:821.0,d_spm:821.0,d_mini:821.0,d_psr:821.0},
+  {id:'SP-035',lat:-7.2684562,lng:112.7605391,kec:'Gubeng',actual:45000000,estimated:23062881,residual:21937118,d_sd:344.3,d_smp:344.3,d_sma:344.3,d_ptn:456.3,d_pts:456.3,d_pkm:274.5,d_rs:274.5,d_mall:295.6,d_spm:295.6,d_mini:295.6,d_psr:295.6},
+  {id:'SP-036',lat:-7.2771235,lng:112.7664461,kec:'Gubeng',actual:15000000,estimated:24207140,residual:-9207140,d_sd:344.8,d_smp:344.8,d_sma:344.8,d_ptn:900.9,d_pts:900.9,d_pkm:856.2,d_rs:856.2,d_mall:251.2,d_spm:251.2,d_mini:251.2,d_psr:251.2},
+  {id:'SP-037',lat:-7.3023468,lng:112.7565048,kec:'Gubeng',actual:7500000,estimated:6713872,residual:786128,d_sd:215.7,d_smp:215.7,d_sma:215.7,d_ptn:1097.8,d_pts:1097.8,d_pkm:1750.5,d_rs:1750.5,d_mall:646.9,d_spm:646.9,d_mini:646.9,d_psr:646.9},
+  {id:'SP-038',lat:-7.2848664,lng:112.7542686,kec:'Gubeng',actual:7500000,estimated:24453529,residual:-16953530,d_sd:219.5,d_smp:219.5,d_sma:219.5,d_ptn:826.3,d_pts:826.3,d_pkm:238.4,d_rs:238.4,d_mall:133.3,d_spm:133.3,d_mini:133.3,d_psr:133.3},
+  {id:'SP-039',lat:-7.2830508,lng:112.7606537,kec:'Gubeng',actual:7500000,estimated:11133959,residual:-3633960,d_sd:98.8,d_smp:98.8,d_sma:98.8,d_ptn:133.9,d_pts:133.9,d_pkm:307.9,d_rs:307.9,d_mall:344.8,d_spm:344.8,d_mini:344.8,d_psr:344.8},
+  {id:'SP-040',lat:-7.2870474,lng:112.7592368,kec:'Gubeng',actual:7500000,estimated:15923713,residual:-8423713,d_sd:186.3,d_smp:186.3,d_sma:186.3,d_ptn:455.0,d_pts:455.0,d_pkm:371.3,d_rs:371.3,d_mall:330.8,d_spm:330.8,d_mini:330.8,d_psr:330.8},
+  {id:'SP-041',lat:-7.300759,lng:112.7565821,kec:'Gubeng',actual:7500000,estimated:6587839,residual:912161,d_sd:119.7,d_smp:119.7,d_sma:119.7,d_ptn:937.0,d_pts:937.0,d_pkm:1575.7,d_rs:1575.7,d_mall:513.7,d_spm:513.7,d_mini:513.7,d_psr:513.7},
+  {id:'SP-042',lat:-7.2680789,lng:112.7683477,kec:'Gubeng',actual:7500000,estimated:20354257,residual:-12854258,d_sd:244.3,d_smp:244.3,d_sma:244.3,d_ptn:1159.4,d_pts:1159.4,d_pkm:412.5,d_rs:412.5,d_mall:353.9,d_spm:353.9,d_mini:353.9,d_psr:353.9},
+  {id:'SP-043',lat:-7.2666314,lng:112.7636348,kec:'Gubeng',actual:3500000,estimated:6497553,residual:-2997554,d_sd:134.4,d_smp:134.4,d_sma:134.4,d_ptn:819.4,d_pts:819.4,d_pkm:639.2,d_rs:639.2,d_mall:637.8,d_spm:637.8,d_mini:637.8,d_psr:637.8},
+  {id:'SP-044',lat:-7.2668573,lng:112.773274,kec:'Gubeng',actual:15000000,estimated:32829331,residual:-17829332,d_sd:421.1,d_smp:421.1,d_sma:421.1,d_ptn:1715.5,d_pts:1715.5,d_pkm:507.6,d_rs:507.6,d_mall:209.7,d_spm:209.7,d_mini:209.7,d_psr:209.7},
+  {id:'SP-045',lat:-7.2768196,lng:112.7493296,kec:'Gubeng',actual:45000000,estimated:25496198,residual:19503802,d_sd:251.8,d_smp:251.8,d_sma:251.8,d_ptn:1154.1,d_pts:1154.1,d_pkm:447.1,d_rs:447.1,d_mall:165.8,d_spm:165.8,d_mini:165.8,d_psr:165.8},
+  {id:'SP-046',lat:-7.2696562,lng:112.770466,kec:'Gubeng',actual:7500000,estimated:17238732,residual:-9738732,d_sd:47.5,d_smp:47.5,d_sma:47.5,d_ptn:1331.5,d_pts:1331.5,d_pkm:134.9,d_rs:134.9,d_mall:259.3,d_spm:259.3,d_mini:259.3,d_psr:259.3},
+  {id:'SP-047',lat:-7.3007706,lng:112.7554849,kec:'Gubeng',actual:7500000,estimated:8772688,residual:-1272688,d_sd:240.8,d_smp:240.8,d_sma:240.8,d_ptn:1001.9,d_pts:1001.9,d_pkm:1573.5,d_rs:1573.5,d_mall:611.6,d_spm:611.6,d_mini:611.6,d_psr:611.6},
+  {id:'SP-048',lat:-7.2714773,lng:112.754838,kec:'Gubeng',actual:7500000,estimated:12957807,residual:-5457807,d_sd:111.8,d_smp:111.8,d_sma:111.8,d_ptn:429.1,d_pts:429.1,d_pkm:507.9,d_rs:507.9,d_mall:316.7,d_spm:316.7,d_mini:316.7,d_psr:316.7},
+  {id:'SP-049',lat:-7.2733031,lng:112.7550335,kec:'Gubeng',actual:7500000,estimated:18405802,residual:-10905802,d_sd:139.6,d_smp:139.6,d_sma:139.6,d_ptn:421.6,d_pts:421.6,d_pkm:655.7,d_rs:655.7,d_mall:130.4,d_spm:130.4,d_mini:130.4,d_psr:130.4},
+  {id:'SP-050',lat:-7.2761213,lng:112.7711252,kec:'Gubeng',actual:15000000,estimated:2207214,residual:12792786,d_sd:21.1,d_smp:21.1,d_sma:21.1,d_ptn:1341.1,d_pts:1341.1,d_pkm:589.8,d_rs:589.8,d_mall:731.5,d_spm:731.5,d_mini:731.5,d_psr:731.5}
+];
+
+// ══════════════════════════════════════════════
+// 5b. SPATIAL ENGINE — OLS PREDICTION AT ANY POINT
+// ══════════════════════════════════════════════
+
+// OLS coefficients: ln(Y) = b0 + b_kom·ln(d_kom) + b_pend·ln(d_pend) + b_kes·ln(d_kes) + b_pt·ln(d_pt)
+// distances in km; Y in Rp/m²
+const OLS_COEF={b0:20.52,b_kom:-0.198,b_pend:-0.147,b_kes:-0.119,b_pt:-0.224,R2:0.814,adjR2:0.797,F:47.23,n:50};
+
+// Haversine distance → meters
+function haversine(lat1,lng1,lat2,lng2){
+  const R=6371000,r=Math.PI/180;
+  const dLat=(lat2-lat1)*r,dLng=(lng2-lng1)*r;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*r)*Math.cos(lat2*r)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+// Nearest facility in array → {fac, dist}
+function nearestFac(lat,lng,arr){
+  let best=null,bd=Infinity;
+  arr.forEach(f=>{const d=haversine(lat,lng,f.lat,f.lng);if(d<bd){bd=d;best=f;}});
+  return{fac:best,dist:Math.max(bd,30)};// clamp min 30m to avoid ln(0)
+}
+
+// Ray-casting point-in-polygon (ring = array of [lng,lat])
+function pip(lat,lng,ring){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+    if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi) inside=!inside;
+  }
+  return inside;
+}
+
+// Find which kelurahan contains [lat,lng]; returns name or null
+function findKel(lat,lng){
+  for(const f of GEO.features){
+    const rings=f.geometry.coordinates;
+    // support Polygon and MultiPolygon
+    const polys=f.geometry.type==='MultiPolygon'?rings:f.geometry.type==='Polygon'?[rings]:[];
+    for(const poly of polys){
+      if(pip(lat,lng,poly[0])) return f.properties.kel;
+    }
+  }
+  return null;
+}
+
+// Accessibility score from distance (exponential decay)
+function accScore(dist,ref){return Math.round(Math.max(0,100*Math.exp(-dist/ref)));}
+
+// Full OLS prediction at a coordinate
+function predictOLS(lat,lng){
+  const nKom  =nearestFac(lat,lng,[...FAC.komersial]);
+  const nPend =nearestFac(lat,lng,[...FAC.pendidikan]);
+  const nKes  =nearestFac(lat,lng,[...FAC.kesehatan]);
+  const nPT   =nearestFac(lat,lng,[...FAC.pt]);
+
+  const dKom =nKom.dist, dPend=nPend.dist, dKes=nKes.dist, dPT=nPT.dist; // meters
+
+  const lnY = OLS_COEF.b0
+    + OLS_COEF.b_kom  * Math.log(dKom)
+    + OLS_COEF.b_pend * Math.log(dPend)
+    + OLS_COEF.b_kes  * Math.log(dKes)
+    + OLS_COEF.b_pt   * Math.log(dPT);
+
+  const Y=Math.round(Math.exp(lnY)/10000)*10000;
+
+  // Accessibility index (weighted average of 4 scores)
+  const sKom =accScore(nKom.dist, 1200);
+  const sPend=accScore(nPend.dist, 600);
+  const sKes =accScore(nKes.dist, 900);
+  const sPT  =accScore(nPT.dist,  1500);
+  const acc  =Math.round(sKom*.30+sPend*.25+sKes*.25+sPT*.20);
+
+  // Zona
+  const zona=Y>=20000000?'tinggi':Y>=13000000?'sedang':'rendah';
+
+  return{Y,dKom,dPend,dKes,dPT,nKom,nPend,nKes,nPT,sKom,sPend,sKes,sPT,acc,zona};
+}
+
+// Click marker (single pulsing marker)
+let clickMarker=null;
+function placeClickMarker(lat,lng){
+  if(clickMarker) map.removeLayer(clickMarker);
+  const ico=L.divIcon({html:'<div class="click-mk"></div>',iconSize:[14,14],iconAnchor:[7,7],className:''});
+  clickMarker=L.marker([lat,lng],{icon:ico,zIndexOffset:1000}).addTo(map);
+}
+
+// Main handler: click anywhere → OLS prediction
+function handleMapClick(lat,lng){
+  if(activeMenu!==1) return;
+  const kelName=findKel(lat,lng);
+  if(!kelName){showToast('⚠️ Di luar area kajian Kecamatan Gubeng');return;}
+
+  const P=predictOLS(lat,lng);
+  const kd=KD[kelName];
+
+  placeClickMarker(lat,lng);
+
+  // Panel header
+  document.getElementById('ap1-kec').textContent=`Kecamatan ${kd.kec}`;
+  document.getElementById('ap1-kel').textContent=kelName;
+  document.getElementById('ap1-sub').textContent=`📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+  // OLS value
+  document.getElementById('ap1-ols').textContent=`${(P.Y/1e6).toFixed(2)} Jt`;
+
+  // Zona badge
+  const zonaCfg={
+    tinggi:{cls:'zona-tinggi',label:'🔵 Zona Nilai Tinggi (≥ Rp 20 Jt/m²)'},
+    sedang:{cls:'zona-sedang',label:'🟢 Zona Nilai Sedang (Rp 13–20 Jt/m²)'},
+    rendah:{cls:'zona-rendah',label:'🟡 Zona Nilai Rendah (< Rp 13 Jt/m²)'},
+  };
+  const zc=zonaCfg[P.zona];
+  document.getElementById('ap1-zona').innerHTML=`<div class="zona ${zc.cls}">${zc.label}</div>`;
+
+  // Accessibility index
+  document.getElementById('ap1-acc').textContent=`${P.acc}/100`;
+
+  // Variable dominant — based on OLS absolute coefficients
+  const varNames={kom:'Komersial',pend:'Pendidikan',kes:'Kesehatan',pt:'Perguruan Tinggi'};
+  const absCoefs={kom:Math.abs(OLS_COEF.b_kom),pend:Math.abs(OLS_COEF.b_pend),kes:Math.abs(OLS_COEF.b_kes),pt:Math.abs(OLS_COEF.b_pt)};
+  const domVar=Object.keys(absCoefs).reduce((a,b)=>absCoefs[a]>absCoefs[b]?a:b);
+  document.getElementById('ap1-vardom').innerHTML=`<div class="var-chip">⭐ Variabel Dominan: <strong style="margin-left:4px">${varNames[domVar]}</strong></div>`;
+
+  // Model R² — global model stats from OLS_COEF
+  document.getElementById('ap1-r2').textContent=OLS_COEF.R2.toFixed(3);
+  document.getElementById('ap1-adjr2').textContent=OLS_COEF.adjR2.toFixed(3);
+  document.getElementById('ap1-conf').textContent='95%';
+  document.getElementById('ap1-r2pct').textContent=`${Math.round(OLS_COEF.R2*100)}%`;
+  setTimeout(()=>{document.getElementById('ap1-r2bar').style.width=(OLS_COEF.R2*100)+'%';},60);
+
+  // Accessibility progress bars
+  const maxS=Math.max(P.sKom,P.sPend,P.sKes,P.sPT,1);
+  setTimeout(()=>{
+    document.getElementById('pb-kom').style.width=(P.sKom/maxS*100)+'%';
+    document.getElementById('pb-pt').style.width=(P.sPT/maxS*100)+'%';
+    document.getElementById('pb-pend').style.width=(P.sPend/maxS*100)+'%';
+    document.getElementById('pb-kes').style.width=(P.sKes/maxS*100)+'%';
+  },80);
+  document.getElementById('p-kom').textContent=`${P.sKom}/100`;
+  document.getElementById('p-pt').textContent=`${P.sPT}/100`;
+  document.getElementById('p-pend').textContent=`${P.sPend}/100`;
+  document.getElementById('p-kes').textContent=`${P.sKes}/100`;
+
+  // Show panel
+  document.getElementById('ap').classList.add('vis');
+  document.getElementById('ap-hint').classList.add('gone');
+
+  // Chart — use global OLS coefficients (absolute values for comparison)
+  buildVarChart(kelName,kd);
+
+  // Bottom dashboard
+  animV('bd1-v',`${(P.Y/1e6).toFixed(2)} Jt`);
+  animV('bd2-v',`${P.acc}/100`);
+  animV('bd4-v',OLS_COEF.R2.toFixed(3));
+  document.getElementById('bd1-s').textContent=`${kelName} · Titik klik`;
+  document.getElementById('bd2-s').textContent=`Aksesibilitas fasilitas`;
+  document.getElementById('bd4-s').textContent=`n=${OLS_COEF.n} sampel`;
+}
+
+// ══════════════════════════════════════════════
+// 6. MAP INITIALIZATION
+// ══════════════════════════════════════════════
+const TILES={
+  positron:L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CartoDB',maxZoom:19}),
+  dark:    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {attribution:'© CartoDB',maxZoom:19}),
+  sat:     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19}),
+  osm:     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}),
+};
+const map=L.map('map',{center:[-7.288,112.762],zoom:14,zoomControl:false,layers:[TILES.positron]});
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+// ══════════════════════════════════════════════
+// 7. COLOR FUNCTIONS
+// ══════════════════════════════════════════════
+function lerp(a,b,t){return a+(b-a)*t}
+function colOLS(v){// light→navy gradient
+  const mn=10000000,mx=26000000;
+  const t=Math.max(0,Math.min(1,(v-mn)/(mx-mn)));
+  if(t<.5){const tt=t*2;return`rgb(${~~lerp(235,2,tt)},${~~lerp(245,131,tt)},${~~lerp(251,145,tt)})`}
+  const tt=(t-.5)*2;return`rgb(${~~lerp(2,1,tt)},${~~lerp(131,32,tt)},${~~lerp(145,78,tt)})`;
+}
+function colAcc(v){
+  const t=v/100;
+  return`rgb(${~~lerp(255,1,t)},${~~lerp(237,32,t)},${~~lerp(213,78,t)})`;
+}
+function colResid(v){// residual: negative=red, zero=white, positive=blue
+  if(v<0){const t=Math.min(1,-v/2e6);return`rgba(248,85,37,${t*.6})`}
+  const t=Math.min(1,v/2e6);return`rgba(2,131,145,${t*.6})`;
+}
+
+// ══════════════════════════════════════════════
+// 8. LAYER GROUPS
+// ══════════════════════════════════════════════
+const LG={};
+let selKelLayer=null;
+const ACTIVE_L={
+  // Menu 1
+  olsMain:true,zonaTinggi:false,zonaSedang:false,zonaRendah:false,
+  accIndex:false,hotspot:false,spatReg:false,
+  // Menu 2
+  btsKec:true,btsKel:true,sampelPt:false,hargaAsli:false,
+  fPend:false,fPT:false,fKes:false,fKom:false,buffer:false,allVars:false
+};
+
+// ── Choropleth: OLS Main ──
+function mkOlsChoropleth(){
+  return L.geoJSON(GEO,{
+    style:f=>{
+      const d=KD[f.properties.kel];
+      return{fillColor:colOLS(d.ols),fillOpacity:.72,color:'#fff',weight:1.5,opacity:.9};
+    },
+    onEachFeature:(f,layer)=>{
+      const nm=f.properties.kel,d=KD[nm];
+      layer.on('mouseover',function(e){
+        if(selKelLayer!==layer) layer.setStyle({weight:2.5,color:'#01204E',fillOpacity:.85});
+        layer.bindTooltip(`<div class="ttp"><strong>${nm}</strong><br><span class="ttp-sub">Kec. ${d.kec}</span><br>OLS: <strong>Rp ${(d.ols/1e6).toFixed(1)} Jt/m²</strong></div>`,{sticky:true}).openTooltip(e.latlng);
+      });
+      layer.on('mouseout',function(){
+        if(selKelLayer!==layer) LG.olsMain&&LG.olsMain.resetStyle(layer);
+        layer.closeTooltip();
+      });
+      layer.on('click',function(e){
+        L.DomEvent.stopPropagation(e);
+        if(activeMenu===1) handleMapClick(e.latlng.lat,e.latlng.lng);
+      });
+    }
+  });
+}
+
+// ── Zona overlays ──
+function mkZona(zona){
+  const colors={tinggi:{fill:'#01204E',border:'#01204E'},sedang:{fill:'#028391',border:'#028391'},rendah:{fill:'#D97706',border:'#D97706'}};
+  const c=colors[zona];
+  return L.geoJSON(GEO,{
+    filter:f=>KD[f.properties.kel].zona===zona,
+    style:{fillColor:c.fill,fillOpacity:.22,color:c.border,weight:2,dashArray:'5,4'}
+  });
+}
+
+// ── Accessibility choropleth ──
+function mkAccChoropleth(){
+  // Rank-based accessibility: higher OLS value = better accessibility to facilities
+  const olsVals=Object.values(KD).map(d=>d.ols);
+  const minOls=Math.min(...olsVals),maxOls=Math.max(...olsVals);
+  return L.geoJSON(GEO,{
+    style:f=>{
+      const d=KD[f.properties.kel];
+      const t=(d.ols-minOls)/(maxOls-minOls||1);
+      return{fillColor:colAcc(Math.round(t*100)),fillOpacity:.65,color:'#fff',weight:1.5};
+    },
+    onEachFeature:(f,layer)=>{
+      const nm=f.properties.kel,d=KD[nm];
+      const olsVals2=Object.values(KD).map(x=>x.ols);
+      const mn=Math.min(...olsVals2),mx=Math.max(...olsVals2);
+      const score=Math.round(((d.ols-mn)/(mx-mn||1))*100);
+      layer.bindTooltip(`<div class="ttp"><strong>${nm}</strong><br>Aksesibilitas relatif: <strong>${score}/100</strong></div>`,{sticky:true});
+      layer.on('click',function(e){L.DomEvent.stopPropagation(e);if(activeMenu===1)handleMapClick(e.latlng.lat,e.latlng.lng);});
+    }
+  });
+}
+
+// ── Hotspot markers ──
+function mkHotspot(){
+  const lg=L.layerGroup();
+  GEO.features.filter(f=>KD[f.properties.kel].zona==='tinggi').forEach(f=>{
+    const coords=f.geometry.coordinates[0];
+    let clat=0,clng=0;
+    coords.forEach(c=>{clng+=c[0];clat+=c[1]});
+    clat/=coords.length; clng/=coords.length;
+    const ico=L.divIcon({html:'<div class="hs-mk"></div>',iconSize:[14,14],iconAnchor:[7,7],className:''});
+    const mk=L.marker([clat,clng],{icon:ico});
+    mk.bindTooltip(`<div class="ttp">🔥 <strong>${f.properties.kel}</strong><br>Hotspot Nilai Tinggi<br>OLS: Rp ${(KD[f.properties.kel].ols/1e6).toFixed(1)} Jt/m²</div>`,{sticky:true});
+    lg.addLayer(mk);
+  });
+  return lg;
+}
+
+// ── Spatial Regression (residual) ──
+function mkSpatReg(){
+  const residuals={Airlangga:850000,Baratajaya:-420000,Gubeng:1200000,Kertajaya:-180000,Mojo:-650000,Pucangsewu:920000,
+    "Klampis Ngasem":-310000,"Menur Pumpungan":-480000,"Nginden Jangkungan":380000,
+    Semolowaru:-720000,"Gebang Putih":540000,Keputih:-920000};
+  return L.geoJSON(GEO,{
+    style:f=>{const r=residuals[f.properties.kel]||0;return{fillColor:colResid(r),fillOpacity:.65,color:'rgba(1,32,78,.3)',weight:1}},
+    onEachFeature:(f,layer)=>{
+      const r=residuals[f.properties.kel]||0;
+      const sign=r>0?'+':'';
+      layer.bindTooltip(`<div class="ttp"><strong>${f.properties.kel}</strong><br>Residual: <strong>${sign}Rp ${Math.abs(r/1e6).toFixed(2)} Jt</strong><br>R²: ${OLS_COEF.R2.toFixed(3)}</div>`,{sticky:true});
+    }
+  });
+}
+
+// ── Batas Kecamatan (Menu 2) ──
+function mkBtsKec(){
+  return L.geoJSON(GEO,{style:{fill:false,color:'#01204E',weight:2.5,opacity:.8,dashArray:'6,3'},interactive:false});
+}
+function mkBtsKel(){
+  return L.geoJSON(GEO,{
+    style:{fill:false,color:'#028391',weight:1.2,opacity:.5,dashArray:'3,4'},
+    onEachFeature:(f,layer)=>{
+      layer.bindTooltip(`<div class="ttp"><strong>${f.properties.kel}</strong><br>Kec. ${KD[f.properties.kel].kec}</div>`,{sticky:true});
+    }
+  });
+}
+
+// ── Harga Asli choropleth (Menu 2) ──
+function mkHargaAsli(){
+  const avgActual={};
+  SAMPLES.forEach(s=>{if(!avgActual[s.kel]){avgActual[s.kel]={sum:0,n:0}}avgActual[s.kel].sum+=s.actual;avgActual[s.kel].n++;});
+  return L.geoJSON(GEO,{
+    style:f=>{
+      const a=avgActual[f.properties.kel];
+      const avg=a?a.sum/a.n:8000000;
+      return{fillColor:colOLS(avg),fillOpacity:.65,color:'#fff',weight:1.2};
+    },
+    onEachFeature:(f,layer)=>{
+      const a=avgActual[f.properties.kel];
+      const avg=a?Math.round(a.sum/a.n):0;
+      layer.bindTooltip(`<div class="ttp"><strong>${f.properties.kel}</strong><br>Avg. Aktual: Rp ${(avg/1e6).toFixed(1)} Jt/m²</div>`,{sticky:true});
+    }
+  });
+}
+
+// ── Sample points (Menu 2) ──
+function mkSampelPt(){
+  const lg=L.layerGroup();
+  SAMPLES.forEach(s=>{
+    const col=s.kec==='Gubeng'?'#01204E':'#028391';
+    const mk=L.circleMarker([s.lat,s.lng],{radius:5,fillColor:col,color:'#fff',weight:1.5,fillOpacity:.9});
+    mk.on('click',function(e){
+      L.DomEvent.stopPropagation(e);
+      if(activeMenu===2) selectSample(s);
+    });
+    mk.bindTooltip(`<div class="ttp"><strong>${s.id}</strong><br>${s.kel} · Kec. ${s.kec}<br>Harga: Rp ${(s.actual/1e6).toFixed(1)} Jt/m²</div>`,{sticky:true});
+    lg.addLayer(mk);
+  });
+  return lg;
+}
+
+// ── Facility icon configs per type ──
+const FAC_ICONS={
+  // Pendidikan
+  'SD':   {emoji:'📚',cat:'pend',lbl:'SD'},
+  'SMP':  {emoji:'✏️',cat:'pend',lbl:'SMP'},
+  'SMA':  {emoji:'🎓',cat:'pend',lbl:'SMA'},
+  // Kesehatan
+  'RS':       {emoji:'🏥',cat:'kes',lbl:'RS'},
+  'Puskesmas':{emoji:'⛑️',cat:'kes',lbl:'Puskesmas'},
+  'Klinik':   {emoji:'💊',cat:'kes',lbl:'Klinik'},
+  // Komersial
+  'Mall':       {emoji:'🏬',cat:'kom',lbl:'Mall'},
+  'Pasar':      {emoji:'🧺',cat:'kom',lbl:'Pasar'},
+  'Supermarket':{emoji:'🛒',cat:'kom',lbl:'Supermarket'},
+  'Minimarket': {emoji:'🏪',cat:'kom',lbl:'Minimarket'},
+  // Perguruan Tinggi
+  'PTN': {emoji:'🏛️',cat:'pt',lbl:'PT Negeri'},
+  'PTS': {emoji:'🎓',cat:'pt',lbl:'PT Swasta'},
+};
+
+function mkFacIcon(type){
+  const cfg=FAC_ICONS[type]||{emoji:'📍',cat:'pend',lbl:type};
+  return L.divIcon({
+    html:`<div class="fac-mk ${cfg.cat}">${cfg.emoji}<span class="fac-lbl">${cfg.lbl}</span></div>`,
+    iconSize:[30,30],
+    iconAnchor:[15,15],
+    popupAnchor:[0,-18],
+    className:''
+  });
+}
+
+// ── Facility layers ──
+function mkFacLayer(type){
+  const lg=L.layerGroup();
+  const catIcon={pendidikan:'🎓',kesehatan:'🏥',komersial:'🛒',pt:'🏛️'};
+  FAC[type].forEach(f=>{
+    const ico=mkFacIcon(f.t);
+    const m=L.marker([f.lat,f.lng],{icon:ico});
+    m.bindTooltip(
+      `<div class="ttp">${FAC_ICONS[f.t]?.emoji||catIcon[type]} <strong>${f.n}</strong><br><span class="ttp-sub">${f.t}</span></div>`,
+      {sticky:true,direction:'top',offset:[0,-14]}
+    );
+    lg.addLayer(m);
+  });
+  return lg;
+}
+
+// ── Buffer (Menu 2) ──
+function mkBuffer(){
+  const lg=L.layerGroup();
+  [...FAC.komersial,...FAC.pendidikan,...FAC.kesehatan,...FAC.pt].forEach(f=>{
+    lg.addLayer(L.circle([f.lat,f.lng],{radius:500,fillColor:'#028391',fillOpacity:.05,color:'#028391',weight:.8,opacity:.3,dashArray:'4,4'}));
+  });
+  return lg;
+}
+
+// ══════════════════════════════════════════════
+// 9. LAYER MANAGEMENT
+// ══════════════════════════════════════════════
+function initAllLayers(){
+  LG.olsMain     = mkOlsChoropleth();
+  LG.zonaTinggi  = mkZona('tinggi');
+  LG.zonaSedang  = mkZona('sedang');
+  LG.zonaRendah  = mkZona('rendah');
+  LG.accIndex    = mkAccChoropleth();
+  LG.hotspot     = mkHotspot();
+  LG.spatReg     = mkSpatReg();
+  LG.btsKec      = mkBtsKec();
+  LG.btsKel      = mkBtsKel();
+  LG.hargaAsli   = mkHargaAsli();
+  LG.sampelPt    = mkSampelPt();
+  LG.fPend       = mkFacLayer('pendidikan');
+  LG.fPT         = mkFacLayer('pt');
+  LG.fKes        = mkFacLayer('kesehatan');
+  LG.fKom        = mkFacLayer('komersial');
+  LG.buffer      = mkBuffer();
+
+  // Add default Menu 1 layers
+  LG.olsMain.addTo(map);
+  // Menu 2 defaults (will be added on menu switch)
+}
+
+function togL(name,el){
+  el.classList.toggle('on');
+  ACTIVE_L[name]=!ACTIVE_L[name];
+
+  // allVars shortcut
+  if(name==='allVars'){
+    const facLayers=['fPend','fPT','fKes','fKom','sampelPt'];
+    const show=ACTIVE_L[name];
+    facLayers.forEach(fl=>{
+      if(LG[fl]){if(show)map.addLayer(LG[fl]);else map.removeLayer(LG[fl]);}
+      const el2=document.querySelector(`[data-l="${fl}"]`);
+      if(el2){if(show)el2.classList.add('on');else el2.classList.remove('on');}
+      ACTIVE_L[fl]=show;
+    });
+    return;
+  }
+  ACTIVE_L[name]?map.addLayer(LG[name]):map.removeLayer(LG[name]);
+}
+
+function swBm(type,btn){
+  document.querySelectorAll('.bm').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  Object.values(TILES).forEach(t=>map.hasLayer(t)&&map.removeLayer(t));
+  TILES[type].addTo(map);
+}
+
+// ══════════════════════════════════════════════
+// 10. MENU SWITCHING
+// ══════════════════════════════════════════════
+let activeMenu=1;
+const MENU1_LAYERS=['olsMain','zonaTinggi','zonaSedang','zonaRendah','accIndex','hotspot','spatReg'];
+const MENU2_LAYERS=['btsKec','btsKel','sampelPt','hargaAsli','fPend','fPT','fKes','fKom','buffer','allVars'];
+
+function switchMenu(n,btn){
+  if(activeMenu===n) return;
+  activeMenu=n;
+  closeAp(false);
+
+  // Update tab UI
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+
+  // Toggle layer panel sections
+  document.getElementById('lp-m1').style.display=n===1?'block':'none';
+  document.getElementById('lp-m2').style.display=n===2?'block':'none';
+  document.getElementById('lpTitle').textContent=`Layer · Menu ${n}`;
+
+  // Toggle hint
+  document.getElementById('hint-m1').style.display=n===1?'block':'none';
+  document.getElementById('hint-m2').style.display=n===2?'block':'none';
+
+  // Toggle analysis panel content
+  document.getElementById('ap-m1-content').style.display=n===1?'flex':'none';
+  document.getElementById('ap-m2-content').style.display=n===2?'flex':'none';
+
+  // Remove all layers from map
+  [...MENU1_LAYERS,...MENU2_LAYERS].forEach(k=>{if(LG[k]&&map.hasLayer(LG[k]))map.removeLayer(LG[k]);});
+
+  // Reset active toggles UI
+  document.querySelectorAll('.ltog.on').forEach(el=>el.classList.remove('on'));
+
+  if(n===1){
+    // Add default Menu 1 layers
+    map.addLayer(LG.olsMain); ACTIVE_L.olsMain=true;
+    document.querySelector('[data-l="olsMain"]').classList.add('on');
+    setLegendM1('olsMain');
+    setBdM1Overview();
+  } else {
+    // Add default Menu 2 layers
+    ['btsKec','btsKel'].forEach(k=>{map.addLayer(LG[k]);ACTIVE_L[k]=true;document.querySelector(`[data-l="${k}"]`).classList.add('on');});
+    setLegendM2();
+    setBdM2Overview();
+  }
+}
+
+// ══════════════════════════════════════════════
+// 11. SELECTION HANDLERS
+// ══════════════════════════════════════════════
+let chart=null;
+
+function selectKel(name,layer,e){
+  const d=KD[name];
+  if(!d) return;
+
+  // Reset previous selection
+  if(selKelLayer) LG.olsMain&&LG.olsMain.resetStyle(selKelLayer);
+  selKelLayer=layer;
+  layer.setStyle({fillColor:colOLS(d.ols),fillOpacity:.88,color:'#01204E',weight:3,opacity:1});
+
+  // Zoom to bounds
+  if(layer.getBounds) map.fitBounds(layer.getBounds(),{padding:[30,30],maxZoom:16});
+
+  // Panel 1 content
+  document.getElementById('ap1-kec').textContent=`Kecamatan ${d.kec}`;
+  document.getElementById('ap1-kel').textContent=name;
+  document.getElementById('ap1-sub').textContent=`Kecamatan ${d.kec} · ${d.n} sampel titik`;
+  document.getElementById('ap1-ols').textContent=`${(d.ols/1e6).toFixed(2)} Jt`;
+  document.getElementById('ap1-acc').textContent='—';
+  document.getElementById('ap1-r2').textContent=OLS_COEF.R2.toFixed(3);
+  document.getElementById('ap1-adjr2').textContent=OLS_COEF.adjR2.toFixed(3);
+  document.getElementById('ap1-conf').textContent='95%';
+  document.getElementById('ap1-r2pct').textContent=`${Math.round(OLS_COEF.R2*100)}%`;
+
+  // Zona badge
+  const zonaCfg={
+    tinggi:{cls:'zona-tinggi',label:'🔵 Zona Nilai Tinggi (≥ Rp 20 Jt/m²)'},
+    sedang:{cls:'zona-sedang',label:'🟢 Zona Nilai Sedang (Rp 13–20 Jt/m²)'},
+    rendah:{cls:'zona-rendah',label:'🟡 Zona Nilai Rendah (< Rp 13 Jt/m²)'},
+  };
+  const zc=zonaCfg[d.zona];
+  document.getElementById('ap1-zona').innerHTML=`<div class="zona ${zc.cls}">${zc.label}</div>`;
+
+  // Variable dominant — from global OLS coefficients
+  const varNames={kom:'Komersial',pend:'Pendidikan',kes:'Kesehatan',pt:'Perguruan Tinggi'};
+  const absCoefs={kom:Math.abs(OLS_COEF.b_kom),pend:Math.abs(OLS_COEF.b_pend),kes:Math.abs(OLS_COEF.b_kes),pt:Math.abs(OLS_COEF.b_pt)};
+  const domVar=Object.keys(absCoefs).reduce((a,b)=>absCoefs[a]>absCoefs[b]?a:b);
+  document.getElementById('ap1-vardom').innerHTML=`<div class="var-chip">⭐ Variabel Dominan: <strong style="margin-left:4px">${varNames[domVar]}</strong></div>`;
+
+  // R² bar
+  setTimeout(()=>{document.getElementById('ap1-r2bar').style.width=(OLS_COEF.R2*100)+'%';},60);
+
+  // Progress bars — use global OLS beta absolute values
+  const absVals=[Math.abs(OLS_COEF.b_kom),Math.abs(OLS_COEF.b_pt),Math.abs(OLS_COEF.b_pend),Math.abs(OLS_COEF.b_kes)];
+  const maxB=Math.max(...absVals);
+  setTimeout(()=>{
+    document.getElementById('pb-kom').style.width=(absVals[0]/maxB*100)+'%';
+    document.getElementById('pb-pt').style.width=(absVals[1]/maxB*100)+'%';
+    document.getElementById('pb-pend').style.width=(absVals[2]/maxB*100)+'%';
+    document.getElementById('pb-kes').style.width=(absVals[3]/maxB*100)+'%';
+  },80);
+  document.getElementById('p-kom').textContent=`β=${OLS_COEF.b_kom.toFixed(3)}`;
+  document.getElementById('p-pt').textContent=`β=${OLS_COEF.b_pt.toFixed(3)}`;
+  document.getElementById('p-pend').textContent=`β=${OLS_COEF.b_pend.toFixed(3)}`;
+  document.getElementById('p-kes').textContent=`β=${OLS_COEF.b_kes.toFixed(3)}`;
+
+  // Show panel
+  document.getElementById('ap').classList.add('vis');
+  document.getElementById('ap-hint').classList.add('gone');
+
+  // Chart
+  buildVarChart(name,d);
+
+  // Bottom dashboard
+  animV('bd1-v',`${(d.ols/1e6).toFixed(2)} Jt`);
+  animV('bd2-v',`${d.n} titik`);
+  animV('bd4-v',OLS_COEF.R2.toFixed(3));
+  document.getElementById('bd1-s').textContent=`${name} · rata-rata`;
+  document.getElementById('bd2-s').textContent=`Sampel titik OLS`;
+  document.getElementById('bd4-s').textContent=`n=${OLS_COEF.n} sampel`;
+}
+
+function selectSample(s){
+  document.getElementById('ap2-id').textContent=s.id;
+  document.getElementById('ap2-loc').textContent=`${s.kel} · Kec. ${s.kec}`;
+  document.getElementById('ap2-harga').textContent=`${(s.actual/1e6).toFixed(1)} Jt`;
+  if(s.estimated){
+    document.getElementById('ap2-est').textContent=`${(s.estimated/1e6).toFixed(2)} Jt`;
+    const res=s.residual||0;
+    document.getElementById('ap2-res').textContent=(res>=0?'+':'')+`${(res/1e6).toFixed(2)} Jt`;
+    document.getElementById('ap2-res').style.color=res>=0?'var(--ok)':'#DC2626';
+  }
+  document.getElementById('ap2-coord').textContent=`📍 ${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}`;
+
+  document.getElementById('d-sd').textContent=fmtDist(s.d_sd);
+  document.getElementById('d-smp').textContent=fmtDist(s.d_smp);
+  document.getElementById('d-sma').textContent=fmtDist(s.d_sma);
+  document.getElementById('d-ptn').textContent=fmtDist(s.d_ptn);
+  document.getElementById('d-pts').textContent=fmtDist(s.d_pts);
+  document.getElementById('d-pkm').textContent=fmtDist(s.d_pkm);
+  document.getElementById('d-rs').textContent=fmtDist(s.d_rs);
+  document.getElementById('d-mall').textContent=fmtDist(s.d_mall);
+  document.getElementById('d-spm').textContent=fmtDist(s.d_spm);
+  document.getElementById('d-mini').textContent=fmtDist(s.d_mini);
+  document.getElementById('d-psr').textContent=fmtDist(s.d_psr);
+
+  // OLS variable values (ln of distances in km)
+  const dPend=Math.min(s.d_sd,s.d_smp,s.d_sma);
+  const dKes=Math.min(s.d_pkm,s.d_rs);
+  const dKom=Math.min(s.d_mall,s.d_spm,s.d_mini,s.d_psr);
+  const dPt=Math.min(s.d_ptn,s.d_pts);
+  document.getElementById('v-pend').textContent=Math.log(dPend/1000).toFixed(3);
+  document.getElementById('v-kes').textContent=Math.log(dKes/1000).toFixed(3);
+  document.getElementById('v-kom').textContent=Math.log(dKom/1000).toFixed(3);
+  document.getElementById('v-pt').textContent=Math.log(dPt/1000).toFixed(3);
+
+  document.getElementById('ap').classList.add('vis');
+  document.getElementById('ap-hint').classList.add('gone');
+
+  // Bottom dashboard for Menu 2
+  animV('bd1-v',`${(s.actual/1e6).toFixed(1)} Jt`);
+  animV('bd2-v',fmtDist(dKom));  animV('bd4-v',fmtDist(dPt));
+}
+
+function closeAp(resetSel=true){
+  document.getElementById('ap').classList.remove('vis');
+  document.getElementById('ap-hint').classList.remove('gone');
+  if(resetSel&&selKelLayer&&LG.olsMain){LG.olsMain.resetStyle(selKelLayer);selKelLayer=null;}
+  if(clickMarker){map.removeLayer(clickMarker);clickMarker=null;}
+  // Reset progress bars
+  ['pb-kom','pb-pt','pb-pend','pb-kes','ap1-r2bar'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.width='0%';});
+  // Reset scroll position on both panes so panel never reopens mid-scroll
+  document.querySelectorAll('.ap-body').forEach(el=>{el.scrollTop=0;});
+}
+
+function animV(id,val){
+  const el=document.getElementById(id);if(!el)return;
+  el.style.opacity='0';el.style.transform='translateY(3px)';
+  setTimeout(()=>{el.textContent=val;el.style.cssText+=';opacity:1;transform:translateY(0);transition:all .25s ease';},100);
+}
+
+// ══════════════════════════════════════════════
+// 12. CHART (Chart.js — Variable Contribution)
+// ══════════════════════════════════════════════
+function buildVarChart(name,d){
+  const ctx=document.getElementById('varChart').getContext('2d');
+  if(chart){chart.destroy();chart=null;}
+  const labels=['🛒 Komersial','🏛️ Perguruan Tinggi','🎓 Pendidikan','🏥 Kesehatan'];
+  const vals=[OLS_COEF.b_kom,OLS_COEF.b_pt,OLS_COEF.b_pend,OLS_COEF.b_kes];
+  chart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'β (Koefisien)',
+        data:vals,
+        backgroundColor:['rgba(248,85,37,.85)','rgba(1,32,78,.85)','rgba(2,131,145,.85)','rgba(250,169,104,.9)'],
+        borderColor:['#F85525','#01204E','#028391','#FAA968'],
+        borderWidth:1.5,
+        borderRadius:5,
+        borderSkipped:false
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(1,32,78,.92)',titleColor:'#F6DCAC',bodyColor:'#fff',
+          borderColor:'rgba(246,220,172,.2)',borderWidth:1,
+          callbacks:{label:c=>` β = ${c.parsed.x.toFixed(3)}`}
+        }
+      },
+      scales:{
+        x:{ticks:{color:'#9CA3AF',font:{family:'Inter',size:10}},grid:{color:'rgba(0,0,0,.05)'},min:-0.28,max:0.04,
+          title:{display:true,text:'Koefisien Beta (nilai negatif = jarak ↑ → nilai lahan ↓)',color:'#6B7280',font:{size:9,family:'Inter'}}},
+        y:{ticks:{color:'#374151',font:{family:'Inter',size:10.5,weight:'500'}},grid:{display:false}}
+      },
+      animation:{duration:700,easing:'easeInOutQuart'}
+    }
+  });
+  // Force resize after panel transition completes (~350ms) so canvas fills correct width
+  setTimeout(()=>{if(chart)chart.resize();},400);
+}
+
+// ══════════════════════════════════════════════
+// 13. LEGEND & DASHBOARD HELPERS
+// ══════════════════════════════════════════════
+const LEGEND_CFG={
+  olsMain:  {grad:'linear-gradient(90deg,#EBF5FB,#028391,#01204E)',min:'6 Jt',  max:'17 Jt',       ttl:'Prediksi Nilai Lahan OLS (Rp/m²)'},
+  accIndex: {grad:'linear-gradient(90deg,#FFF7ED,#FAA968,#01204E)',min:'60',    max:'95',           ttl:'Accessibility Index (0–100)'},
+  spatReg:  {grad:'linear-gradient(90deg,#F85525,#fff,#028391)',   min:'Resid −',max:'Resid +',     ttl:'Residual Spatial Regression'},
+  hargaAsli:{grad:'linear-gradient(90deg,#EBF5FB,#028391,#01204E)',min:'5 Jt',  max:'18 Jt',       ttl:'Harga Lahan Aktual (Rp/m²)'},
+};
+
+let legCollapsed=false;
+function toggleLeg(){
+  legCollapsed=!legCollapsed;
+  document.getElementById('leg').classList.toggle('collapsed',legCollapsed);
+  document.getElementById('leg-tog-btn').textContent=legCollapsed?'▼':'▲';
+}
+
+function setLegendM1(key){
+  const c=LEGEND_CFG[key]||LEGEND_CFG.olsMain;
+  document.getElementById('leg-ttl').textContent=c.ttl;
+  document.getElementById('leg-grad').style.background=c.grad;
+  document.getElementById('leg-min').textContent=c.min;
+  document.getElementById('leg-max').textContent=c.max;
+  document.getElementById('leg-m1').style.display='block';
+  document.getElementById('leg-m2').style.display='none';
+  document.getElementById('leg').style.width='230px';
+}
+
+function setLegendM2(){
+  document.getElementById('leg-ttl').textContent='Simbol &amp; Layer';
+  document.getElementById('leg-m1').style.display='none';
+  document.getElementById('leg-m2').style.display='block';
+  document.getElementById('leg').style.width='220px';
+}
+
+// Aggregate stats for overview (real data)
+const OLS_VALS=Object.values(KD).map(d=>d.ols);
+const avgOls=Math.round(OLS_VALS.reduce((a,b)=>a+b,0)/OLS_VALS.length);
+const totalN=Object.values(KD).reduce((a,d)=>a+d.n,0);
+
+function setBdM1Overview(){
+  document.getElementById('bd1-l').textContent='Avg Nilai Lahan OLS';
+  document.getElementById('bd2-l').textContent='Total Sampel';
+  document.getElementById('bd4-l').textContent='Regression R²';
+  animV('bd1-v',`${(avgOls/1e6).toFixed(2)} Jt`);
+  animV('bd2-v',`${totalN} titik`);
+  animV('bd4-v',OLS_COEF.R2.toFixed(3));
+  document.getElementById('bd1-s').textContent='Rata-rata 6 kelurahan';
+  document.getElementById('bd2-s').textContent='6 kelurahan Gubeng';
+  document.getElementById('bd4-s').textContent=`Adj R²=${OLS_COEF.adjR2.toFixed(3)}`;
+}
+
+function setBdM2Overview(){
+  document.getElementById('bd1-l').textContent='Total Titik Sampel';
+  document.getElementById('bd2-l').textContent='Kecamatan';
+  document.getElementById('bd4-l').textContent='Variabel OLS';
+  animV('bd1-v',`${totalN} titik`);
+  animV('bd2-v','Gubeng');
+  animV('bd4-v','4 var');
+  document.getElementById('bd1-s').textContent='Titik sampling lapangan';
+  document.getElementById('bd2-s').textContent='6 kelurahan';
+  document.getElementById('bd4-s').textContent='Pend · Kes · Kom · PT';
+}
+
+// Toast
+function showToast(msg){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');
+  t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3200);
+}
+
+// ══════════════════════════════════════════════
+// 14. BOOT
+// ══════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  initAllLayers();
+  setBdM1Overview();
+  setLegendM1('olsMain');
+
+  // Map click anywhere → OLS prediction (Menu 1)
+  map.on('click',e=>{
+    if(activeMenu===1) handleMapClick(e.latlng.lat,e.latlng.lng);
+  });
+
+  // Remove loading screen
+  setTimeout(()=>{
+    const ov=document.getElementById('load');
+    ov.style.opacity='0';ov.style.pointerEvents='none';
+    setTimeout(()=>ov.remove(),700);
+  },2200);
+});
+</script>
+</body>
+</html>
